@@ -1,0 +1,12 @@
+{
+  "license": "MIT",
+  "devDependencies": {
+    "rnoh": "file:../rnoh"
+  },
+  "author": "",
+  "name": "rnoh-camera-roll",
+  "description": "Please describe the basic information.",
+  "main": "index.ets",
+  "version": "1.0.0",
+  "dependencies": {}
+}

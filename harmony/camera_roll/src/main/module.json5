@@ -1,0 +1,11 @@
+{
+  "module": {
+    "name": "camera_roll",
+    "type": "har",
+    "deviceTypes": [
+      "default",
+      "tablet",
+      "2in1"
+    ]
+  }
+}

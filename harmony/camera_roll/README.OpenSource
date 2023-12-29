@@ -1,0 +1,11 @@
+[
+    {
+        "Name": "react-native-cameraroll#readme",
+        "License": "MIT License",
+        "License File": "https://github.com/react-native-cameraroll/react-native-cameraroll/blob/master/LICENCE",
+        "Version Number": "7.2.2",
+        "Owner" : "Bartol Karuza <bartol.k@gmail.com>"
+        "Upstream URL": "https://github.com/react-native-cameraroll/react-native-cameraroll",
+        "Description": "React Native Camera Roll for iOS & Android"
+    }
+]

@@ -1,9 +1,0 @@
-rootProject.name = 'CameraRollExample'
-apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesSettingsGradle(settings)
-
-include ':app'
-
-// Start added for this project (react-native-cameraroll)
-include ':react-native-cameraroll'
-project(':react-native-cameraroll').projectDir = new File(rootProject.projectDir, '../../android')
-// End added
