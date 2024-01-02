@@ -5,7 +5,7 @@
 ![MIT License][license-badge]
 [![Lean Core Badge][lean-core-badge]][lean-core-issue]
 
-## *Notice*: The NPM package name has changed, please change your package.json dependency!
+## *Notice*: The NPM package name has changed, please change your package.json dependency! 
 
 Previous package name: @react-native-community/cameraroll
 
@@ -15,13 +15,6 @@ New package name: @react-native-camera-roll/camera-roll
 ## Getting started
 
 `$ npm install @react-native-camera-roll/camera-roll --save`
-
-or
-
-`$ yarn add @react-native-camera-roll/camera-roll`
-
-## Linking
-Linking should be automatic since react-native version 0.60. Below are instructions if auto linking does not work.
 
 ### Mostly automatic installation
 
@@ -173,7 +166,7 @@ async function savePicture() {
 CameraRoll.save(tag, { type, album })
 ```
 
-Saves the photo or video to the photo library, and returns the URI of the newly created asset.
+Saves the photo or video to the photo library.
 
 On Android, the tag must be a local image or video URI, such as `"file:///sdcard/img.png"`.
 
@@ -195,11 +188,6 @@ Returns a Promise which will resolve with the new URI.
 | album | string                | No       | The album to save to |
 
 ---
-### `saveAsset()`
-
-Same as `save()`, but returns the full asset information (`PhotoIdentifier`) instead of just the URI.
-
----
 ### `getAlbums()`
 
 ```javascript
@@ -213,17 +201,12 @@ Returns a Promise with a list of albums
   * `All` // default
   * `Videos`
   * `Photos`
-* `albumType` : {string} :  (iOS only) Specifies filter on type of album. Valid values are:
-  * `All`
-  * `Album` // default
-  * `SmartAlbum`
 
 **Returns:**
 
 Array of `Album` object
   * title: {string}
   * count: {number}
-  * type: {string} (iOS only)
   * subtype: {string | undefined} : See AlbumSubType type for possible values. iOS only.
 
 ---
@@ -250,7 +233,6 @@ Returns a Promise with photo identifier objects from the local camera roll of th
   * `Event`
   * `Faces`
   * `Library`
-  * `SmartAlbum`
   * `PhotoStream`
   * `SavedPhotos`
 * `groupName` : {string} : Specifies filter on group names, like 'Recent Photos' or custom album titles.
@@ -270,16 +252,14 @@ Returns a Promise with photo identifier objects from the local camera roll of th
   * `imageSize` : Ensures `image.width` and `image.height` are available in each node. This has a small performance impact on Android.
   * `playableDuration` : Ensures `image.playableDuration` is available in each node. This has a medium peformance impact on Android.
   * `orientation` : Ensures `image.orientation` is available in each node. This has a small peformance impact on Android. **Android only**
-  * `albums` : Ensures `group_name` is available in each node. This has a large peformance impact on iOS.
 
 Returns a Promise which when resolved will be of the following shape:
 
 * `edges` : {Array<node>} An array of node objects
   * `node`: {object} An object with the following shape:
-    * `id`: {string} : A local identifier. Correspond to `Media._ID` on Android and `localIdentifier` on iOS.
     * `type`: {string}
     * `subTypes`: {Array<string>} : An array of subtype strings (see `SubTypes` type). Always [] on Android.
-    * `group_name`: {Array<string>} : An array of albums containing the element. Always 1 element on Android. 0 to n elements on iOS.
+    * `group_name`: {string}
     * `image`: {object} : An object with the following shape:
       * `uri`: {string}
       * `filename`: {string | null} : Only set if the `include` parameter contains `filename`
@@ -487,7 +467,7 @@ Requests deletion of photos in the camera roll.
 
 On Android, the uri must be a local image or video URI, such as `"file:///sdcard/img.png"`.
 
-On iOS, the uri can be any image URI (including local, remote asset-library and base64 data URIs) or a local video file URI. The user is presented with a dialog box that shows them the asset(s) and asks them to confirm deletion. This is not able to be bypassed as per Apple Developer guidelines.
+On iOS, the uri can be any image URI (including local, remote asset-library and base64 data URIs) or a local video file URI. The user is presented with a dialog box that shows them the asset(s) and asks them to confirm deletion. This is not able to be bypassed as per Apple Developer guidelines. 
 
 Returns a Promise which will resolve when the deletion request is completed, or reject if there is a problem during the deletion. On iOS the user is able to cancel the deletion request, which causes a rejection, while on Android the rejection will be due to a system error.
 
@@ -518,16 +498,16 @@ Upload photo/video with `iosGetImageDataById` method
 ```javascript
 
 try {
-// uri 'PH://xxxx'
+// uri 'PH://xxxx'          
 const fileData = await CameraRoll.iosGetImageDataById(uri);
 if (!fileData?.node?.image?.filepath) return undefined;
 const uploadPath = imageData.node.image.filepath; // output should be file://...
-// fetch or ReactNativeBlobUtil.fetch to upload
+// fetch or ReactNativeBlobUtil.fetch to upload 
 }
 catch (error) {}
 
-```
-
+```          
+          
 
 
 ### `useCameraRoll()`

@@ -70,7 +70,7 @@ export type PhotoIdentifier = {
   node: {
     type: string;
     subTypes?: SubTypes;
-    group_name?: string[];
+    group_name?: string;
     image: {
       filename: string | null;
       filepath: string | null;
@@ -105,5 +105,5 @@ export type PhotoIdentifiersPage = {
 };
 
 export type PhotoThumbnail = {
-  thumbnailBase64: string;
+  thumbnailBase64: string
 };

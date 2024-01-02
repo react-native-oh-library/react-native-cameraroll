@@ -39,7 +39,7 @@ const ASSET_TYPE_PHOTOS = 'Photos'
 const ASSET_TYPE_VIDEOS = 'Videos'
 const ASSET_TYPE_ALL = 'All'
 
-export class CameraRollTurboModule extends TurboModule {code
+export class CameraRollTurboModule extends TurboModule {
   private phAccessHelper: photoAccessHelper.PhotoAccessHelper
 
   constructor(ctx: TurboModuleContext) {

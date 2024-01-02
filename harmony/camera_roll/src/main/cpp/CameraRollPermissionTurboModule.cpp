@@ -78,7 +78,7 @@ static jsi::Value _hostFunction_CameraRollPermissionTurboModuleSpecJSI_removeLis
     const jsi::Value *args, 
     size_t count)
 {
-    return static_cast<ArkTSTurboModule &>(turboModule).call(rt, "removeListeners", args, count);
+    return static_cast<ArkTSTurboModule &>(turboModule).callAsync(rt, "removeListeners", args, count);
 }
 
 
