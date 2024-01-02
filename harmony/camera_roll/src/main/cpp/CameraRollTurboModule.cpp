@@ -27,56 +27,74 @@
 using namespace rnoh;
 using namespace facebook;
 
-static jsi::Value _hostFunction_CameraRollTurboModuleSpecJSI_saveToCameraRoll(jsi::Runtime &rt,
-                                                                       react::TurboModule &turboModule,
-                                                                       const jsi::Value *args, size_t count)
+static jsi::Value _hostFunction_CameraRollTurboModuleSpecJSI_saveToCameraRoll(
+    jsi::Runtime &rt,
+    react::TurboModule &turboModule,
+    const jsi::Value *args, size_t count)
 {
     return static_cast<ArkTSTurboModule &>(turboModule).callAsync(rt, "saveToCameraRoll", args, count);
 }
 
-static jsi::Value _hostFunction_CameraRollTurboModuleSpecJSI_getPhotos(jsi::Runtime &rt,
-                                                                       react::TurboModule &turboModule,
-                                                                       const jsi::Value *args, size_t count)
+static jsi::Value _hostFunction_CameraRollTurboModuleSpecJSI_getPhotos(
+    jsi::Runtime &rt,
+    react::TurboModule &turboModule,
+    const jsi::Value *args,
+    size_t count)
 {
     return static_cast<ArkTSTurboModule &>(turboModule).callAsync(rt, "getPhotos", args, count);
 }
 
-static jsi::Value _hostFunction_CameraRollTurboModuleSpecJSI_getAlbums(jsi::Runtime &rt,
-                                                                       react::TurboModule &turboModule,
-                                                                       const jsi::Value *args, size_t count)
+static jsi::Value _hostFunction_CameraRollTurboModuleSpecJSI_getAlbums(
+    jsi::Runtime &rt,
+    react::TurboModule &turboModule,
+    const jsi::Value *args,
+    size_t count)
 {
     return static_cast<ArkTSTurboModule &>(turboModule).callAsync(rt, "getAlbums", args, count);
 }
 
-static jsi::Value _hostFunction_CameraRollTurboModuleSpecJSI_deletePhotos(jsi::Runtime &rt,
-                                                                       react::TurboModule &turboModule,
-                                                                       const jsi::Value *args, size_t count)
+static jsi::Value _hostFunction_CameraRollTurboModuleSpecJSI_deletePhotos(
+    jsi::Runtime &rt,
+    react::TurboModule &turboModule,
+    const jsi::Value *args,
+    size_t count)
 {
     return static_cast<ArkTSTurboModule &>(turboModule).callAsync(rt, "deletePhotos", args, count);
 }
 
-static jsi::Value _hostFunction_CameraRollTurboModuleSpecJSI_getPhotoByInternalID(jsi::Runtime &rt,
-                                                                       react::TurboModule &turboModule,
-                                                                       const jsi::Value *args, size_t count)
+static jsi::Value _hostFunction_CameraRollTurboModuleSpecJSI_getPhotoByInternalID(
+    jsi::Runtime &rt,
+    react::TurboModule &turboModule,
+    const jsi::Value *args,
+    size_t count)
 {
     return static_cast<ArkTSTurboModule &>(turboModule).callAsync(rt, "getPhotoByInternalID", args, count);
 }
 
-static jsi::Value _hostFunction_CameraRollTurboModuleSpecJSI_getPhotoThumbnail(jsi::Runtime &rt,
-                                                                       react::TurboModule &turboModule,
-                                                                       const jsi::Value *args, size_t count)
+static jsi::Value _hostFunction_CameraRollTurboModuleSpecJSI_getPhotoThumbnail(
+    jsi::Runtime &rt,
+    react::TurboModule &turboModule,
+    const jsi::Value *args,
+    size_t count)
 {
     return static_cast<ArkTSTurboModule &>(turboModule).callAsync(rt, "getPhotoThumbnail", args, count);
 }
 
 
-RNImagePickerTurboModule::RNImagePickerTurboModule(const ArkTSTurboModule::Context ctx, const std::string name)
-    : ArkTSTurboModule(ctx, name)
+CameraRollTurboModuleSpecJSI::CameraRollTurboModuleSpecJSI(
+    const ArkTSTurboModule::Context ctx, 
+    const std::string name) : ArkTSTurboModule(ctx, name)
 {
-    methodMap_["saveToCameraRoll"] = MethodMetadata{2, _hostFunction_CameraRollTurboModuleSpecJSI_saveToCameraRoll};
-    methodMap_["getPhotos"] = MethodMetadata{1, _hostFunction_CameraRollTurboModuleSpecJSI_getPhotos};
-    methodMap_["getAlbums"] = MethodMetadata{1, _hostFunction_CameraRollTurboModuleSpecJSI_getAlbums};
-    methodMap_["deletePhotos"] = MethodMetadata{2, _hostFunction_CameraRollTurboModuleSpecJSI_deletePhotos};
-    methodMap_["getPhotoByInternalID"] = MethodMetadata{2, _hostFunction_CameraRollTurboModuleSpecJSI_getPhotoByInternalID};
-    methodMap_["getPhotoThumbnail"] = MethodMetadata{1, _hostFunction_CameraRollTurboModuleSpecJSI_getPhotoThumbnail};
+    methodMap_["saveToCameraRoll"] = 
+        MethodMetadata{2, _hostFunction_CameraRollTurboModuleSpecJSI_saveToCameraRoll};
+    methodMap_["getPhotos"] = 
+        MethodMetadata{1, _hostFunction_CameraRollTurboModuleSpecJSI_getPhotos};
+    methodMap_["getAlbums"] = 
+        MethodMetadata{1, _hostFunction_CameraRollTurboModuleSpecJSI_getAlbums};
+    methodMap_["deletePhotos"] = 
+        MethodMetadata{2, _hostFunction_CameraRollTurboModuleSpecJSI_deletePhotos};
+    methodMap_["getPhotoByInternalID"] = 
+        MethodMetadata{2, _hostFunction_CameraRollTurboModuleSpecJSI_getPhotoByInternalID};
+    methodMap_["getPhotoThumbnail"] = 
+        MethodMetadata{1, _hostFunction_CameraRollTurboModuleSpecJSI_getPhotoThumbnail};
 }

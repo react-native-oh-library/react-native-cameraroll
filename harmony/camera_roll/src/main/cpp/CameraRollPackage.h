@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 
-#ifdef CAMERAROLLPACKAGE_H
-#deine CAMERAROLLPACKAGE_H
+#ifndef CAMERAROLLPACKAGE_H
+#define CAMERAROLLPACKAGE_H
 
 #include "CameraRollTurboModule.h"
 #include "CameraRollPermissionTurboModule.h"
@@ -31,27 +31,30 @@
 
 using namespace rnoh;
 using namespace facebook;
+
 class CameraRollTurboModuleFactoryDelegate : public TurboModuleFactoryDelegate {
 public:
     SharedTurboModule createTurboModule(Context ctx, const std::string &name) const override
     {
         if (name == "RNCCameraRoll") {
-            return std::make_shared<RNImagePickerTurboModule>(ctx, name);
+            return std::make_shared<CameraRollTurboModuleSpecJSI>(ctx, name);
         }
         if (name == "RNCCameraRollPermission") {
-            return std::make_shared<RNImagePickerTurboModule>(ctx, name);
+            return std::make_shared<CameraRollPermissionTurboModuleSpecJSI>(ctx, name);
         }
         return nullptr;
     };
 };
 namespace rnoh {
-    class CameraRollPackage : public Package {
-    public:
-        CameraRollPackage(Package::Context ctx) : Package(ctx) {}
-        std::unique_ptr<TurboModuleFactoryDelegate> createTurboModuleFactoryDelegate() override
-        {
-            return std::make_unique<CameraRollTurboModuleFactoryDelegate>();
-        }
-    };
+
+class CameraRollPackage : public Package {
+public:
+    CameraRollPackage(Package::Context ctx) : Package(ctx) {}
+        
+    std::unique_ptr<TurboModuleFactoryDelegate> createTurboModuleFactoryDelegate()
+    {
+        return std::make_unique<CameraRollTurboModuleFactoryDelegate>();
+    }
+};
 } // namespace rnoh
 #endif

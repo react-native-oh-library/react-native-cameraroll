@@ -27,58 +27,76 @@
 using namespace rnoh;
 using namespace facebook;
 
-static jsi::Value _hostFunction_CameraRollPermissionTurboModuleSpecJSI_checkPermission(jsi::Runtime &rt,
-                                                                       react::TurboModule &turboModule,
-                                                                       const jsi::Value *args, size_t count)
+static jsi::Value _hostFunction_CameraRollPermissionTurboModuleSpecJSI_checkPermission(
+    jsi::Runtime &rt,
+    react::TurboModule &turboModule,
+    const jsi::Value *args, 
+    size_t count)
 {
     return static_cast<ArkTSTurboModule &>(turboModule).callAsync(rt, "checkPermission", args, count);
 }
 
-static jsi::Value _hostFunction_CameraRollPermissionTurboModuleSpecJSI_requestReadWritePermission(jsi::Runtime &rt,
-                                                                       react::TurboModule &turboModule,
-                                                                       const jsi::Value *args, size_t count)
+static jsi::Value _hostFunction_CameraRollPermissionTurboModuleSpecJSI_requestReadWritePermission(
+    jsi::Runtime &rt,
+    react::TurboModule &turboModule,
+    const jsi::Value *args, 
+    size_t count)
 {
     return static_cast<ArkTSTurboModule &>(turboModule).callAsync(rt, "requestReadWritePermission", args, count);
 }
 
-static jsi::Value _hostFunction_CameraRollPermissionTurboModuleSpecJSI_requestAddOnlyPermission(jsi::Runtime &rt,
-                                                                       react::TurboModule &turboModule,
-                                                                       const jsi::Value *args, size_t count)
+static jsi::Value _hostFunction_CameraRollPermissionTurboModuleSpecJSI_requestAddOnlyPermission(
+    jsi::Runtime &rt,
+    react::TurboModule &turboModule,
+    const jsi::Value *args, 
+    size_t count)
 {
     return static_cast<ArkTSTurboModule &>(turboModule).callAsync(rt, "requestAddOnlyPermission", args, count);
 }
 
-static jsi::Value _hostFunction_CameraRollPermissionTurboModuleSpecJSI_refreshPhotoSelection(jsi::Runtime &rt,
-                                                                       react::TurboModule &turboModule,
-                                                                       const jsi::Value *args, size_t count)
+static jsi::Value _hostFunction_CameraRollPermissionTurboModuleSpecJSI_refreshPhotoSelection(
+    jsi::Runtime &rt,
+    react::TurboModule &turboModule,
+    const jsi::Value *args, 
+    size_t count)
 {
     return static_cast<ArkTSTurboModule &>(turboModule).callAsync(rt, "refreshPhotoSelection", args, count);
 }
 
-static jsi::Value _hostFunction_CameraRollPermissionTurboModuleSpecJSI_addListener(jsi::Runtime &rt,
-                                                                       react::TurboModule &turboModule,
-                                                                       const jsi::Value *args, size_t count)
+static jsi::Value _hostFunction_CameraRollPermissionTurboModuleSpecJSI_addListener(
+    jsi::Runtime &rt,
+    react::TurboModule &turboModule,
+    const jsi::Value *args, 
+    size_t count)
 {
-    return static_cast<ArkTSTurboModule &>(turboModule).call(rt, "addListener", args, count);
+    return static_cast<ArkTSTurboModule &>(turboModule).callAsync(rt, "addListener", args, count);
 }
 
-static jsi::Value _hostFunction_CameraRollPermissionTurboModuleSpecJSI_removeListeners(jsi::Runtime &rt,
-                                                                       react::TurboModule &turboModule,
-                                                                       const jsi::Value *args, size_t count)
+static jsi::Value _hostFunction_CameraRollPermissionTurboModuleSpecJSI_removeListeners(
+    jsi::Runtime &rt,
+    react::TurboModule &turboModule,
+    const jsi::Value *args, 
+    size_t count)
 {
     return static_cast<ArkTSTurboModule &>(turboModule).call(rt, "removeListeners", args, count);
 }
 
 
 
-CameraRollPermissionTurboModuleTurboModuleSpecJSI::CameraRollPermissionTurboModuleTurboModuleSpecJSI(
+CameraRollPermissionTurboModuleSpecJSI::CameraRollPermissionTurboModuleSpecJSI(
     const ArkTSTurboModule::Context ctx,
     const std::string name): ArkTSTurboModule(ctx, name)
 {
-    methodMap_["checkPermission"] = MethodMetadata{1, _hostFunction_CameraRollPermissionTurboModuleSpecJSI_checkPermission};
-    methodMap_["requestReadWritePermission"] = MethodMetadata{0, _hostFunction_CameraRollPermissionTurboModuleSpecJSI_requestReadWritePermission};
-    methodMap_["requestAddOnlyPermission"] = MethodMetadata{0, _hostFunction_CameraRollPermissionTurboModuleSpecJSI_requestAddOnlyPermission};
-    methodMap_["refreshPhotoSelection"] = MethodMetadata{0, _hostFunction_CameraRollPermissionTurboModuleSpecJSI_refreshPhotoSelection};
-    methodMap_["addListener"] = MethodMetadata{1, _hostFunction_CameraRollPermissionTurboModuleSpecJSI_addListener};
-    methodMap_["removeListeners"] = MethodMetadata{1, _hostFunction_CameraRollPermissionTurboModuleSpecJSI_removeListeners};
+    methodMap_["checkPermission"] = 
+        MethodMetadata{1, _hostFunction_CameraRollPermissionTurboModuleSpecJSI_checkPermission};
+    methodMap_["requestReadWritePermission"] = 
+        MethodMetadata{0, _hostFunction_CameraRollPermissionTurboModuleSpecJSI_requestReadWritePermission};
+    methodMap_["requestAddOnlyPermission"] = 
+        MethodMetadata{0, _hostFunction_CameraRollPermissionTurboModuleSpecJSI_requestAddOnlyPermission};
+    methodMap_["refreshPhotoSelection"] = 
+        MethodMetadata{0, _hostFunction_CameraRollPermissionTurboModuleSpecJSI_refreshPhotoSelection};
+    methodMap_["addListener"] = 
+        MethodMetadata{1, _hostFunction_CameraRollPermissionTurboModuleSpecJSI_addListener};
+    methodMap_["removeListeners"] = 
+        MethodMetadata{1, _hostFunction_CameraRollPermissionTurboModuleSpecJSI_removeListeners};
 }

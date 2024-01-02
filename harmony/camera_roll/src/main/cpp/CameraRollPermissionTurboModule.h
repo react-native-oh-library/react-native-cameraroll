@@ -22,17 +22,17 @@
  * SOFTWARE.
  */
 
-#ifdef CAMERAROLLPERMISSIONTURBOMODULE_H
-#deine CAMERAROLLPERMISSIONTURBOMODULE_H
+#ifndef CAMERAROLLPERMISSIONTURBOMODULE_H
+#define CAMERAROLLPERMISSIONTURBOMODULE_H
 
 #include <ReactCommon/TurboModule.h>
 #include "RNOH/ArkTSTurboModule.h"
 
 namespace rnoh {
 
-class JSI_EXPORT CameraRollPermissionTurboModuleTurboModuleSpecJSI : public ArkTSTurboModule {
+class JSI_EXPORT CameraRollPermissionTurboModuleSpecJSI : public ArkTSTurboModule {
     public:
-        CameraRollPermissionTurboModuleTurboModuleSpecJSI(const ArkTSTurboModule::Context ctx, const std::string name);
+        CameraRollPermissionTurboModuleSpecJSI(const ArkTSTurboModule::Context ctx, const std::string name);
 };
 } // namespace rnoh
 #endif
