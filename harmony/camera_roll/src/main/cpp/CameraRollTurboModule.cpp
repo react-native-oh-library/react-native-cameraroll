@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-#include "CameraRollPackge.h"
+#include "CameraRollPackage.h"
 
 using namespace rnoh;
 using namespace facebook;

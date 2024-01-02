@@ -22,6 +22,6 @@
  * SOFTWARE.
  */
 
-export * from "./src/main/ets/CameraRollPackage"
-export * from "./src/main/ets/CameraRollTurboModule"
-export * from "./src/main/ets/CameraRollPermissionTurboModule"
+export * from './src/main/ets/CameraRollPackage'
+export * from './src/main/ets/CameraRollTurboModule'
+export * from './src/main/ets/CameraRollPermissionTurboModule'
