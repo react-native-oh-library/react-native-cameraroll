@@ -140,7 +140,6 @@ export class CameraRollTurboModule extends TurboModule {
   }
 
   getAlbums(params: GetAlbumsParams): Promise<Album[]> {
-    console.info(`getAlbums`)
     return new Promise<Album[]>((resolve, reject) => {
       let albumSubtype;
       if (ASSET_TYPE_PHOTOS == params.assetType) {
@@ -150,15 +149,14 @@ export class CameraRollTurboModule extends TurboModule {
       } else if (ASSET_TYPE_ALL == params.assetType) {
         albumSubtype = photoAccessHelper.AlbumSubtype.ANY
       }
-      console.info(`getAlbums: ${albumSubtype}`)
-      this.phAccessHelper.getAlbums(photoAccessHelper.AlbumType.SYSTEM, photoAccessHelper.AlbumSubtype.VIDEO).then(result => {
+      this.phAccessHelper.getAlbums(photoAccessHelper.AlbumType.USER, albumSubtype).then(result => {
         let resultAlbums: Album[] = new Array();
         result.getAllObjects().then(albums => {
           albums.forEach(album => {
             resultAlbums.push({ title: album.albumName, count: album.count })
           })
+          resolve(resultAlbums);
         })
-        resolve(resultAlbums);
       }).catch((err: Error) => {
         console.error('getAlbums failed with err: ' + err);
         reject(`Could not get media, ${JSON.stringify(err)}`)

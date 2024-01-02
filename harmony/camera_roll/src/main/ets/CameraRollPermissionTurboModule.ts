@@ -23,7 +23,7 @@
  */
 
 import { TurboModule, TurboModuleContext } from 'rnoh/ts';
-import abilityAccessCtrl, { PermissionRequestResult, Permissions } from '@ohos.abilityAccessCtrl';
+import abilityAccessCtrl, { Permissions } from '@ohos.abilityAccessCtrl';
 
 type HarmonyAccessLevel = 'addOnly' | 'readWrite'
 type CameraRollAuthorizationStatus = 'granted' | 'limited' | 'denied' | 'unavailable' | 'blocked' | 'not-determined';
