@@ -30,10 +30,14 @@ import type {
   PhotoIdentifier,
   GetAlbumsParams,
   PhotoIdentifiersPage,
+  PhotoConvertionOptions,
+  PhotoThumbnailOptions,
   SaveToCameraRollOptions
 } from './CameraRollParamTypes';
 import photoAccessHelper from '@ohos.file.photoAccessHelper';
 import dataSharePredicates from '@ohos.data.dataSharePredicates';
+import util from '@ohos.util';
+import image from '@ohos.multimedia.image';
 
 const ASSET_TYPE_PHOTOS = 'Photos'
 const ASSET_TYPE_VIDEOS = 'Videos'
@@ -70,7 +74,7 @@ export class CameraRollTurboModule extends TurboModule {
       let predicates = new dataSharePredicates.DataSharePredicates()
       predicates.in("media_type", mimeTypes)
       predicates.limit(first + 1, queryBegin)
-      predicates.orderByDesc('date_added').orderByDesc('date_modified')
+      predicates.orderByDesc("date_added").orderByDesc("date_modified")
       let fetchOptions: photoAccessHelper.FetchOptions = {
         fetchColumns: [
           photoAccessHelper.PhotoKeys.URI,
@@ -170,16 +174,52 @@ export class CameraRollTurboModule extends TurboModule {
     })
   }
 
-  getPhotoByInternalID(internalID: string, options: Object,): Promise<PhotoIdentifier> {
+  getPhotoByInternalID(internalID: string, options: PhotoConvertionOptions): Promise<PhotoIdentifier> {
     // internalID  IOS特有
     return new Promise<PhotoIdentifier>((resolve, reject) => {
-
+      this.getPhotoByUri(internalID).then(photoAsset => {
+        let type: string = photoAsset.photoType == 1 ? 'IMAGE' : 'VIDEO'
+        let photo: PhotoIdentifier = {
+          node: {
+            type: type,
+            image: {
+              filename: photoAsset.displayName,
+              filepath: null,
+              extension: null,
+              uri: photoAsset.uri,
+              height: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.HEIGHT).toString()),
+              width: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.WIDTH).toString()),
+              fileSize: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.SIZE).toString()),
+              playableDuration: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.DURATION).toString()),
+              orientation: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.ORIENTATION).toString()),
+            },
+            timestamp: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.DATE_ADDED).toString()),
+            modificationTimestamp: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.DATE_MODIFIED).toString()),
+            location: null
+          }
+        }
+        resolve(photo)
+      })
     })
   }
 
-  getPhotoThumbnail(internalID: string, options: Object): Promise<PhotoThumbnail> {
+  getPhotoThumbnail(internalID: string, options: PhotoThumbnailOptions): Promise<PhotoThumbnail> {
     // internalID  IOS特有
     return new Promise<PhotoThumbnail>((resolve, reject) => {
+      this.getPhotoByUri(internalID).then(photoAsset => {
+        photoAsset.getThumbnail({ height: options.targetSize.height, width: options.targetSize.width }).then(pixMap => {
+          var base64 = new util.Base64Helper();
+          let packOpts: image.PackingOption = {
+            format: "image/jpeg", quality: options.quality * 100
+          }
+          let imagePackerApi = image.createImagePacker()
+          imagePackerApi.packing(pixMap, packOpts).then(arrayBuffer => {
+            base64.encodeToString(new Uint8Array(arrayBuffer)).then(base64String => {
+              resolve({ thumbnailBase64: base64String })
+            })
+          })
+        })
+      })
     })
   }
 
@@ -188,5 +228,34 @@ export class CameraRollTurboModule extends TurboModule {
       return true
     }
     return false;
+  }
+
+  getPhotoByUri(uri: string): Promise<photoAccessHelper.PhotoAsset> {
+    return new Promise<photoAccessHelper.PhotoAsset>((resolve, reject) => {
+      let predicates = new dataSharePredicates.DataSharePredicates()
+      predicates.equalTo("uri", uri);
+      let fetchOptions: photoAccessHelper.FetchOptions = {
+        fetchColumns: [
+          photoAccessHelper.PhotoKeys.URI,
+          photoAccessHelper.PhotoKeys.PHOTO_TYPE,
+          photoAccessHelper.PhotoKeys.DISPLAY_NAME,
+          photoAccessHelper.PhotoKeys.SIZE,
+          photoAccessHelper.PhotoKeys.DATE_ADDED,
+          photoAccessHelper.PhotoKeys.DATE_MODIFIED,
+          photoAccessHelper.PhotoKeys.DURATION,
+          photoAccessHelper.PhotoKeys.WIDTH,
+          photoAccessHelper.PhotoKeys.HEIGHT,
+          photoAccessHelper.PhotoKeys.ORIENTATION,
+          photoAccessHelper.PhotoKeys.DATE_TAKEN,
+          photoAccessHelper.PhotoKeys.FAVORITE,
+          photoAccessHelper.PhotoKeys.TITLE],
+        predicates: predicates
+      };
+      this.phAccessHelper.getAssets(fetchOptions).then((fetchResult) => {
+        fetchResult.getFirstObject().then(photoAsset => {
+          resolve(photoAsset);
+        })
+      })
+    })
   }
 }

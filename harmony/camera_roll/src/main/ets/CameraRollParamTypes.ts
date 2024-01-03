@@ -104,6 +104,20 @@ export type PhotoIdentifiersPage = {
   limited?: boolean;
 };
 
+export type PhotoConvertionOptions = {
+  convertHeicImages?: boolean;
+  quality?: number
+};
+
+export type PhotoThumbnailOptions = {
+  allowNetworkAccess: boolean,  //iOS only
+  targetSize: {
+    height: number,
+    width: number
+  },
+  quality: number
+};
+
 export type PhotoThumbnail = {
   thumbnailBase64: string
 };
