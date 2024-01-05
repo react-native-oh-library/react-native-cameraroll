@@ -34,33 +34,34 @@ export class CameraRollPermissionTurboModule extends TurboModule {
 
   constructor(ctx: TurboModuleContext) {
     super(ctx)
-    this.abilityAccessCtrl = abilityAccessCtrl.createAtManager()
+    this.abilityAccessCtrl = abilityAccessCtrl.createAtManager();
+	this.tokenID = this.ctx.uiAbilityContext.applicationInfo.accessTokenId;
   }
 
   checkPermission(content: string): Promise<CameraRollAuthorizationStatus> {
     // 需要应用tokenID，tokenID通过ApplicationInfo获得，获取ApplicationInfo的方法为系统接口
     return new Promise<CameraRollAuthorizationStatus>((resolve, reject) => {
-      let permission: Permissions
+      let permission: Permissions;
       if (content == 'addOnly') {
-        permission = 'ohos.permission.WRITE_IMAGEVIDEO'
+        permission = 'ohos.permission.WRITE_IMAGEVIDEO';
       } else {
-        permission = 'ohos.permission.READ_IMAGEVIDEO'
+        permission = 'ohos.permission.READ_IMAGEVIDEO';
       }
-      let status = this.abilityAccessCtrl.checkAccessTokenSync(this.tokenID, permission)
+      let status = this.abilityAccessCtrl.checkAccessTokenSync(this.tokenID, permission);
       if (status == abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED) {
-        resolve('granted')
+        resolve('granted');
       } else {
-        resolve('denied')
+        resolve('denied');
       }
     })
   }
 
   requestReadWritePermission(): Promise<CameraRollAuthorizationStatus> {
-    return this.requestPermission(['ohos.permission.WRITE_IMAGEVIDEO'])
+    return this.requestPermission(['ohos.permission.WRITE_IMAGEVIDEO']);
   }
 
   requestAddOnlyPermission(): Promise<CameraRollAuthorizationStatus> {
-    return this.requestPermission(['ohos.permission.READ_IMAGEVIDEO'])
+    return this.requestPermission(['ohos.permission.READ_IMAGEVIDEO']);
   }
 
   refreshPhotoSelection(): Promise<boolean> {
@@ -82,21 +83,22 @@ export class CameraRollPermissionTurboModule extends TurboModule {
         let authResult = result.authResults[0]
         switch (authResult) {
           case -1:
-            status = 'denied'
-            break
+            status = 'denied';
+            break;
           case 0:
-            status = 'granted'
-            break
+            status = 'granted';
+            break;
           case 2:
-            status = 'limited'
-            break
+            status = 'limited';
+            break;
           default:
-            reject(`requestPermissionsFromUser failed , Permissions: ${JSON.stringify(permissions)}`)
+            reject(`requestPermissionsFromUser failed , Permissions: ${JSON.stringify(permissions)}`);
+			break;
         }
-        resolve(status)
+        resolve(status);
       }).catch(err => {
-        console.error(`requestPermissions failed , errMsg: ${JSON.stringify(err)}`)
-        resolve('not-determined')
+        console.error(`requestPermissions failed , errMsg: ${JSON.stringify(err)}`);
+        resolve('not-determined');
       })
     })
   }
