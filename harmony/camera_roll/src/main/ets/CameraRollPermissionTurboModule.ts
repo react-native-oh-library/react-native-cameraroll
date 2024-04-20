@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-import { TurboModule, TurboModuleContext } from 'rnoh/ts';
+import { TurboModule, TurboModuleContext } from '@rnoh/react-native-openharmony/ts';
 import abilityAccessCtrl, { Permissions } from '@ohos.abilityAccessCtrl';
 
 type HarmonyAccessLevel = 'addOnly' | 'readWrite'
