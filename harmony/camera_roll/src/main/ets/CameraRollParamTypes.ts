@@ -1,3 +1,5 @@
+import { expect } from '@ohos/hypium/src/main/interface';
+
 export type GetPhotosParams = {
   first: number;
   after?: string;
@@ -11,10 +13,17 @@ export type GetPhotosParams = {
   include?: Include[];
 };
 
+export enum SaveToCameraRollOptionsTypeMenu {
+  video = 'video',
+  photo = 'photo',
+}
+
 export type SaveToCameraRollOptions = {
-  type?: 'photo' | 'video' | 'auto';
+  type?: SaveToCameraRollOptionsTypeMenu;
   album?: string;
 };
+
+
 
 export type GetAlbumsParams = {
   assetType?: AssetType;
