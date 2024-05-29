@@ -23,82 +23,287 @@
  */
 
 import { TurboModule, TurboModuleContext } from '@rnoh/react-native-openharmony/ts';
-import abilityAccessCtrl, { Permissions } from '@ohos.abilityAccessCtrl';
+import {
+  Album,
+  PhotoThumbnail,
+  GetPhotosParams,
+  PhotoIdentifier,
+  GetAlbumsParams,
+  PhotoIdentifiersPage,
+  PhotoConvertionOptions,
+  PhotoThumbnailOptions,
+  SaveToCameraRollOptions,
+  SaveToCameraRollOptionsTypeMenu
+} from './CameraRollParamTypes';
+import photoAccessHelper from '@ohos.file.photoAccessHelper';
+import dataSharePredicates from '@ohos.data.dataSharePredicates';
+import util from '@ohos.util';
+import image from '@ohos.multimedia.image';
+import fs from '@ohos.file.fs';
+const ASSET_TYPE_PHOTOS = 'Photos'
+const ASSET_TYPE_VIDEOS = 'Videos'
+const ASSET_TYPE_ALL = 'All'
 
-type HarmonyAccessLevel = 'addOnly' | 'readWrite'
-type CameraRollAuthorizationStatus = 'granted' | 'limited' | 'denied' | 'unavailable' | 'blocked' | 'not-determined';
 
-export class CameraRollPermissionTurboModule extends TurboModule {
-  private abilityAccessCtrl: abilityAccessCtrl.AtManager
-  private tokenID: number // checkPermission 需要使用tokenID
+
+
+
+export class CameraRollTurboModule extends TurboModule {
+  private phAccessHelper: photoAccessHelper.PhotoAccessHelper
 
   constructor(ctx: TurboModuleContext) {
     super(ctx)
-    this.abilityAccessCtrl = abilityAccessCtrl.createAtManager();
-	this.tokenID = this.ctx.uiAbilityContext.applicationInfo.accessTokenId;
+    this.phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.ctx.uiAbilityContext);
   }
 
-  checkPermission(content: string): Promise<CameraRollAuthorizationStatus> {
-    // 需要应用tokenID，tokenID通过ApplicationInfo获得，获取ApplicationInfo的方法为系统接口
-    return new Promise<CameraRollAuthorizationStatus>((resolve, reject) => {
-      let permission: Permissions;
-      if (content == 'addOnly') {
-        permission = 'ohos.permission.WRITE_IMAGEVIDEO';
-      } else {
-        permission = 'ohos.permission.READ_IMAGEVIDEO';
-      }
-      let status = this.abilityAccessCtrl.checkAccessTokenSync(this.tokenID, permission);
-      if (status == abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED) {
-        resolve('granted');
-      } else {
-        resolve('denied');
-      }
-    })
+  async save(uri: string, option: SaveToCameraRollOptions): Promise<string>{
+    return await this.saveToCameraRoll(uri,option)
   }
 
-  requestReadWritePermission(): Promise<CameraRollAuthorizationStatus> {
-    return this.requestPermission(['ohos.permission.WRITE_IMAGEVIDEO']);
-  }
-
-  requestAddOnlyPermission(): Promise<CameraRollAuthorizationStatus> {
-    return this.requestPermission(['ohos.permission.READ_IMAGEVIDEO']);
-  }
-
-  refreshPhotoSelection(): Promise<boolean> {
-    return new Promise<boolean>((resolve, reject) => {
-    })
-  }
-
-  addListener(eventName: string): void {
-  }
-
-  removeListeners(count: number): void {
-  }
-
-  requestPermission(permissions: Array<Permissions>): Promise<CameraRollAuthorizationStatus> {
-    let status: CameraRollAuthorizationStatus
-    return new Promise<CameraRollAuthorizationStatus>((resolve, reject) => {
-      this.abilityAccessCtrl.requestPermissionsFromUser(this.ctx.uiAbilityContext, permissions).then(result => {
-        console.info(`result:${JSON.stringify(result)}`)
-        let authResult = result.authResults[0]
-        switch (authResult) {
-          case -1:
-            status = 'denied';
-            break;
-          case 0:
-            status = 'granted';
-            break;
-          case 2:
-            status = 'limited';
-            break;
-          default:
-            reject(`requestPermissionsFromUser failed , Permissions: ${JSON.stringify(permissions)}`);
-			break;
+  async saveToCameraRoll(uri: string, option: SaveToCameraRollOptions): Promise<string> {
+    // 需要用到系统接口
+    return new Promise<string>(async (resolve, reject) => {
+      if(!uri){          // 需要确保fileUri对应的资源存在
+        console.error(`Incorrect path.${uri}`);
+        reject('Incorrect path.')
+      }else {
+        try {
+          let context = this.ctx.uiAbilityContext;
+          let phAccessHelper = photoAccessHelper.getPhotoAccessHelper(context);
+          let fileUri:string = uri;
+          if(option.type === SaveToCameraRollOptionsTypeMenu.photo){
+            let assetChangeRequest: photoAccessHelper.MediaAssetChangeRequest = photoAccessHelper.MediaAssetChangeRequest.createImageAssetRequest(context, fileUri);
+            await phAccessHelper.applyChanges(assetChangeRequest);
+            console.info('createAsset successfully, uri: ' + assetChangeRequest.getAsset().uri);
+            resolve('createAsset successfully, uri: ' + assetChangeRequest.getAsset().uri)
+          }else if(option.type === SaveToCameraRollOptionsTypeMenu.video){
+            let assetChangeRequest: photoAccessHelper.MediaAssetChangeRequest = photoAccessHelper.MediaAssetChangeRequest.createVideoAssetRequest(context, fileUri);
+            await phAccessHelper.applyChanges(assetChangeRequest);
+            console.info('createAsset successfully, uri: ' + assetChangeRequest.getAsset().uri);
+            resolve('createAsset successfully, uri: ' + assetChangeRequest.getAsset().uri)
+          }
+        } catch (err) {
+          console.error(`create asset failed with error: ${err.code}, ${err.message} file:===>${uri}`);
+          reject(`create asset failed with error: ${err.code}, ${err.message} file:===>${uri}`)
         }
-        resolve(status);
+      }
+    })
+  }
+
+
+  releaseCapture(uri: string) {
+    let file = fs.openSync(uri, fs.OpenMode.READ_WRITE);
+    let path = file.path;
+    if (path == null) return;
+    fs.access(path).then((res: boolean) => {
+      if (!res) {
+        return;
+      }
+      if (file.getParent() == this.ctx.uiAbilityContext.cacheDir) {
+        fs.unlinkSync(path);
+      }
+    })
+    fs.closeSync(file);
+  }
+
+  getPhotos(params: GetPhotosParams): Promise<PhotoIdentifiersPage> {
+    return new Promise<PhotoIdentifiersPage>((resolve, reject) => {
+      let first = params.first
+      let after = params.after
+      let groupTypes = params.groupTypes
+      let groupName = params.groupName
+      let includeSharedAlbums = params.includeSharedAlbums
+      let assetType = params.assetType
+      let fromTime = params.fromTime
+      let toTime = params.toTime
+      let mimeTypes = params.mimeTypes
+      let include = params.include
+
+      let queryBegin = parseInt(this.isEmpty(after) ? '0' : after);
+      let predicates = new dataSharePredicates.DataSharePredicates()
+      predicates.in("media_type", mimeTypes)
+      predicates.limit(first + 1, queryBegin)
+      predicates.orderByDesc("date_added").orderByDesc("date_modified")
+      let fetchOptions: photoAccessHelper.FetchOptions = {
+        fetchColumns: [
+          photoAccessHelper.PhotoKeys.URI,
+          photoAccessHelper.PhotoKeys.PHOTO_TYPE,
+          photoAccessHelper.PhotoKeys.DISPLAY_NAME,
+          photoAccessHelper.PhotoKeys.SIZE,
+          photoAccessHelper.PhotoKeys.DATE_ADDED,
+          photoAccessHelper.PhotoKeys.DATE_MODIFIED,
+          photoAccessHelper.PhotoKeys.DURATION,
+          photoAccessHelper.PhotoKeys.WIDTH,
+          photoAccessHelper.PhotoKeys.HEIGHT,
+          photoAccessHelper.PhotoKeys.ORIENTATION,
+          photoAccessHelper.PhotoKeys.DATE_TAKEN,
+          photoAccessHelper.PhotoKeys.FAVORITE,
+          photoAccessHelper.PhotoKeys.TITLE],
+        predicates: predicates
+      };
+      this.phAccessHelper.getAssets(fetchOptions).then((fetchResult) => {
+        if (fetchResult !== undefined) {
+          fetchResult.getAllObjects().then((photoAssets) => {
+            if (photoAssets !== undefined && photoAssets.length != 0) {
+              let has_next_page: boolean = first < photoAssets.length
+              let pageInfo: {
+                has_next_page: boolean;
+                start_cursor?: string;
+                end_cursor?: string;
+              } = {
+                has_next_page: has_next_page,
+                end_cursor: has_next_page ? (queryBegin + first).toString() : ''
+              }
+              let photos: Array<PhotoIdentifier> = new Array<PhotoIdentifier>()
+              photoAssets.forEach(photoAsset => {
+                let type: string = photoAsset.photoType == 1 ? 'IMAGE' : 'VIDEO'
+                let photo: PhotoIdentifier = {
+                  node: {
+                    type: type,
+                    image: {
+                      filename: photoAsset.displayName,
+                      filepath: null,
+                      extension: null,
+                      uri: photoAsset.uri,
+                      height: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.HEIGHT).toString()),
+                      width: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.WIDTH).toString()),
+                      fileSize: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.SIZE).toString()),
+                      playableDuration: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.DURATION).toString()),
+                      orientation: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.ORIENTATION).toString()),
+                    },
+                    timestamp: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.DATE_ADDED).toString()),
+                    modificationTimestamp: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.DATE_MODIFIED).toString()),
+                    location: null
+                  }
+                }
+                photos.push(photo)
+              })
+              let resulPage: PhotoIdentifiersPage = {
+                edges: photos,
+                page_info: pageInfo,
+              }
+              resolve(resulPage)
+            }
+          })
+        }
       }).catch(err => {
-        console.error(`requestPermissions failed , errMsg: ${JSON.stringify(err)}`);
-        resolve('not-determined');
+        console.error('getPhotos failed with err: ' + err);
+      })
+    })
+  }
+
+  getAlbums(params: GetAlbumsParams): Promise<Album[]> {
+    return new Promise<Album[]>((resolve, reject) => {
+      let albumSubtype;
+      if (ASSET_TYPE_PHOTOS == params.assetType) {
+        albumSubtype = photoAccessHelper.AlbumSubtype.USER_GENERIC
+      } else if (ASSET_TYPE_VIDEOS == params.assetType) {
+        albumSubtype = photoAccessHelper.AlbumSubtype.VIDEO
+      } else if (ASSET_TYPE_ALL == params.assetType) {
+        albumSubtype = photoAccessHelper.AlbumSubtype.ANY
+      }
+      this.phAccessHelper.getAlbums(photoAccessHelper.AlbumType.USER, albumSubtype).then(result => {
+        let resultAlbums: Album[] = new Array();
+        result.getAllObjects().then(albums => {
+          albums.forEach(album => {
+            resultAlbums.push({ title: album.albumName, count: album.count })
+          })
+          resolve(resultAlbums);
+        })
+      }).catch((err: Error) => {
+        console.error('getAlbums failed with err: ' + err);
+        reject(`Could not get media, ${JSON.stringify(err)}`)
+      })
+    })
+  }
+
+  deletePhotos(photoUris: Array<string>): Promise<void> {
+    // this.phAccessHelper.deleteAssets 为系统接口
+    return new Promise<void>((resolve, reject) => {
+    })
+  }
+
+  getPhotoByInternalID(internalID: string, options: PhotoConvertionOptions): Promise<PhotoIdentifier> {
+    // internalID  IOS特有
+    return new Promise<PhotoIdentifier>((resolve, reject) => {
+      this.getPhotoByUri(internalID).then(photoAsset => {
+        let type: string = photoAsset.photoType == 1 ? 'IMAGE' : 'VIDEO'
+        let photo: PhotoIdentifier = {
+          node: {
+            type: type,
+            image: {
+              filename: photoAsset.displayName,
+              filepath: null,
+              extension: null,
+              uri: photoAsset.uri,
+              height: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.HEIGHT).toString()),
+              width: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.WIDTH).toString()),
+              fileSize: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.SIZE).toString()),
+              playableDuration: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.DURATION).toString()),
+              orientation: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.ORIENTATION).toString()),
+            },
+            timestamp: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.DATE_ADDED).toString()),
+            modificationTimestamp: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.DATE_MODIFIED).toString()),
+            location: null
+          }
+        }
+        resolve(photo)
+      })
+    })
+  }
+
+  getPhotoThumbnail(internalID: string, options: PhotoThumbnailOptions): Promise<PhotoThumbnail> {
+    // internalID  IOS特有
+    return new Promise<PhotoThumbnail>((resolve, reject) => {
+      this.getPhotoByUri(internalID).then(photoAsset => {
+        photoAsset.getThumbnail({ height: options.targetSize.height, width: options.targetSize.width }).then(pixMap => {
+          var base64 = new util.Base64Helper();
+          let packOpts: image.PackingOption = {
+            format: "image/jpeg", quality: options.quality * 100
+          }
+          let imagePackerApi = image.createImagePacker()
+          imagePackerApi.packing(pixMap, packOpts).then(arrayBuffer => {
+            base64.encodeToString(new Uint8Array(arrayBuffer)).then(base64String => {
+              resolve({ thumbnailBase64: base64String })
+            })
+          })
+        })
+      })
+    })
+  }
+
+  isEmpty(str: string): boolean {
+    if (str === null || str === undefined || str.trim().length === 0) {
+      return true
+    }
+    return false;
+  }
+
+  getPhotoByUri(uri: string): Promise<photoAccessHelper.PhotoAsset> {
+    return new Promise<photoAccessHelper.PhotoAsset>((resolve, reject) => {
+      let predicates = new dataSharePredicates.DataSharePredicates()
+      predicates.equalTo("uri", uri);
+      let fetchOptions: photoAccessHelper.FetchOptions = {
+        fetchColumns: [
+          photoAccessHelper.PhotoKeys.URI,
+          photoAccessHelper.PhotoKeys.PHOTO_TYPE,
+          photoAccessHelper.PhotoKeys.DISPLAY_NAME,
+          photoAccessHelper.PhotoKeys.SIZE,
+          photoAccessHelper.PhotoKeys.DATE_ADDED,
+          photoAccessHelper.PhotoKeys.DATE_MODIFIED,
+          photoAccessHelper.PhotoKeys.DURATION,
+          photoAccessHelper.PhotoKeys.WIDTH,
+          photoAccessHelper.PhotoKeys.HEIGHT,
+          photoAccessHelper.PhotoKeys.ORIENTATION,
+          photoAccessHelper.PhotoKeys.DATE_TAKEN,
+          photoAccessHelper.PhotoKeys.FAVORITE,
+          photoAccessHelper.PhotoKeys.TITLE],
+        predicates: predicates
+      };
+      this.phAccessHelper.getAssets(fetchOptions).then((fetchResult) => {
+        fetchResult.getFirstObject().then(photoAsset => {
+          resolve(photoAsset);
+        })
       })
     })
   }
