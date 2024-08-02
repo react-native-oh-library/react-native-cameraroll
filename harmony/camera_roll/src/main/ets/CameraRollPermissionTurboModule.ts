@@ -48,7 +48,7 @@ const ASSET_TYPE_ALL = 'All'
 
 
 
-export class CameraRollTurboModule extends TurboModule {
+export class CameraRollPermissionTurboModule extends TurboModule {
   private phAccessHelper: photoAccessHelper.PhotoAccessHelper
 
   constructor(ctx: TurboModuleContext) {

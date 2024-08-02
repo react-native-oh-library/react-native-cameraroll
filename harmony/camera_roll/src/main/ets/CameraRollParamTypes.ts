@@ -1,5 +1,3 @@
-import { expect } from '@ohos/hypium/src/main/interface';
-
 export type GetPhotosParams = {
   first: number;
   after?: string;
