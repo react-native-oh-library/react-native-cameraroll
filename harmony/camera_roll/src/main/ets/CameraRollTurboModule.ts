@@ -23,7 +23,7 @@
  */
 
 import { TurboModule, TurboModuleContext } from '@rnoh/react-native-openharmony/ts';
-import type {
+import {
   Album,
   PhotoThumbnail,
   GetPhotosParams,
@@ -32,13 +32,15 @@ import type {
   PhotoIdentifiersPage,
   PhotoConvertionOptions,
   PhotoThumbnailOptions,
-  SaveToCameraRollOptions
+  SaveToCameraRollOptions,
+  SaveToCameraRollOptionsTypeMenu
 } from './CameraRollParamTypes';
 import photoAccessHelper from '@ohos.file.photoAccessHelper';
 import dataSharePredicates from '@ohos.data.dataSharePredicates';
 import util from '@ohos.util';
 import image from '@ohos.multimedia.image';
-
+import fs from '@ohos.file.fs';
+import { BusinessError } from '@ohos.base';
 const ASSET_TYPE_PHOTOS = 'Photos'
 const ASSET_TYPE_VIDEOS = 'Videos'
 const ASSET_TYPE_ALL = 'All'
@@ -51,9 +53,52 @@ export class CameraRollTurboModule extends TurboModule {
     this.phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.ctx.uiAbilityContext);
   }
 
-  saveToCameraRoll(uri: string, option: SaveToCameraRollOptions): Promise<string> {
+  async save(uri: string, option: SaveToCameraRollOptions): Promise<string>{
+    return await this.saveToCameraRoll(uri,option)
+  }
+
+  async saveToCameraRoll(uri: string, option: SaveToCameraRollOptions): Promise<string> {
     // 需要用到系统接口
-    return new Promise<string>((resolve, reject) => {
+    return new Promise<string>(async (resolve, reject) => {
+      // 需要确保fileUri对应的资源存在
+      if (!uri) {
+        console.error(`Incorrect path.${uri}`);
+        reject('Incorrect path.')
+      } else {
+        try {
+          let context = this.ctx.uiAbilityContext;
+          let phAccessHelper = photoAccessHelper.getPhotoAccessHelper(context);
+          // 获取需要保存到媒体库的位于应用沙箱的图片/视频uri
+          let srcFileUris: Array<string> = [
+            uri
+          ];
+          let photoCreationConfigs: Array<photoAccessHelper.PhotoCreationConfig> = [
+            {
+              title: uri.substring(uri.lastIndexOf('/') + 1, uri.lastIndexOf('.')),
+              fileNameExtension: uri.substring(uri.lastIndexOf('.') + 1),
+              photoType: option.type === SaveToCameraRollOptionsTypeMenu.photo ? photoAccessHelper.PhotoType.IMAGE : photoAccessHelper.PhotoType.VIDEO,
+              subtype: photoAccessHelper.PhotoSubtype.DEFAULT
+            }
+          ];
+          await phAccessHelper.showAssetsCreationDialog(srcFileUris, photoCreationConfigs).then(async (res) => {
+            fs.stat(uri.substring(uri.indexOf('/data/'))).then((stat: fs.Stat) => {
+              let file = fs.openSync(uri.substring(uri.indexOf('/data/')), fs.OpenMode.READ_WRITE);
+              let media_file = fs.openSync(res[0], fs.OpenMode.READ_WRITE);
+              let buf = new ArrayBuffer(stat.size);
+              fs.readSync(file.fd, buf);
+              fs.writeSync(media_file.fd, buf);
+              fs.closeSync(file);
+              fs.closeSync(media_file);
+            }).catch((err: BusinessError) => {
+              console.error("get file info failed with error message: " + err.message + ", error code: " + err.code);
+              reject(`get file info failed with error message: ${err.code}, ${err.message} file:===>${uri}`)
+            });
+          })
+        } catch (err) {
+          console.error(`create asset failed with error: ${err.code}, ${err.message} file:===>${uri}`);
+          reject(`create asset failed with error: ${err.code}, ${err.message} file:===>${uri}`);
+        }
+      }
     })
   }
 
@@ -66,6 +111,7 @@ export class CameraRollTurboModule extends TurboModule {
       let includeSharedAlbums = params.includeSharedAlbums
       let assetType = params.assetType
       let fromTime = params.fromTime
+      
       let toTime = params.toTime
       let mimeTypes = params.mimeTypes
       let include = params.include
