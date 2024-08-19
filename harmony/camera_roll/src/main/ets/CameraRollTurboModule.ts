@@ -80,7 +80,7 @@ export class CameraRollTurboModule extends TurboModule {
               subtype: photoAccessHelper.PhotoSubtype.DEFAULT
             }
           ];
-          await phAccessHelper.showAssetsCreationDialog(srcFileUris, photoCreationConfigs).then(async (res) => {
+          phAccessHelper.showAssetsCreationDialog(srcFileUris, photoCreationConfigs).then(async (res) => {
             fs.stat(uri.substring(uri.indexOf('/data/'))).then((stat: fs.Stat) => {
               let file = fs.openSync(uri.substring(uri.indexOf('/data/')), fs.OpenMode.READ_WRITE);
               let media_file = fs.openSync(res[0], fs.OpenMode.READ_WRITE);
@@ -89,6 +89,7 @@ export class CameraRollTurboModule extends TurboModule {
               fs.writeSync(media_file.fd, buf);
               fs.closeSync(file);
               fs.closeSync(media_file);
+              resolve(res[0]);
             }).catch((err: BusinessError) => {
               console.error("get file info failed with error message: " + err.message + ", error code: " + err.code);
               reject(`get file info failed with error message: ${err.code}, ${err.message} file:===>${uri}`)
