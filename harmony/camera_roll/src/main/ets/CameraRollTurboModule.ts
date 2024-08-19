@@ -57,9 +57,9 @@ export class CameraRollTurboModule extends TurboModule {
     return await this.saveToCameraRoll(uri,option)
   }
 
-  async saveToCameraRoll(uri: string, option: SaveToCameraRollOptions): Promise<string> {
+  saveToCameraRoll(uri: string, option: SaveToCameraRollOptions): Promise<string> {
     // 需要用到系统接口
-    return new Promise<string>(async (resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
       // 需要确保fileUri对应的资源存在
       if (!uri) {
         console.error(`Incorrect path.${uri}`);
