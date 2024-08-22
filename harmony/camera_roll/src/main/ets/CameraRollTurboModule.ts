@@ -41,63 +41,75 @@ import util from '@ohos.util';
 import image from '@ohos.multimedia.image';
 import fs from '@ohos.file.fs';
 import { BusinessError } from '@ohos.base';
+
 const ASSET_TYPE_PHOTOS = 'Photos'
 const ASSET_TYPE_VIDEOS = 'Videos'
 const ASSET_TYPE_ALL = 'All'
 
 export class CameraRollTurboModule extends TurboModule {
   private phAccessHelper: photoAccessHelper.PhotoAccessHelper
+  private saveUri: string = '';
 
   constructor(ctx: TurboModuleContext) {
     super(ctx)
     this.phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.ctx.uiAbilityContext);
   }
 
-  async save(uri: string, option: SaveToCameraRollOptions): Promise<string>{
-    return await this.saveToCameraRoll(uri,option)
+  async save(uri: string, option: SaveToCameraRollOptions): Promise<string> {
+    return await this.saveToCameraRoll(uri, option)
   }
 
   saveToCameraRoll(uri: string, option: SaveToCameraRollOptions): Promise<string> {
     // 需要用到系统接口
-    return new Promise<string>((resolve, reject) => {
+    return new Promise<string>(async (resolve, reject) => {
       // 需要确保fileUri对应的资源存在
-      if (!uri) {
-        console.error(`Incorrect path.${uri}`);
+      this.saveUri = uri;
+      if (!this.saveUri) {
+        console.error(`Incorrect path.${this.saveUri}`);
         reject('Incorrect path.')
       } else {
         try {
           let context = this.ctx.uiAbilityContext;
           let phAccessHelper = photoAccessHelper.getPhotoAccessHelper(context);
+          await this.DownloadResources();
           // 获取需要保存到媒体库的位于应用沙箱的图片/视频uri
           let srcFileUris: Array<string> = [
-            uri
+            this.saveUri
           ];
           let photoCreationConfigs: Array<photoAccessHelper.PhotoCreationConfig> = [
             {
-              title: uri.substring(uri.lastIndexOf('/') + 1, uri.lastIndexOf('.')),
-              fileNameExtension: uri.substring(uri.lastIndexOf('.') + 1),
-              photoType: option.type === SaveToCameraRollOptionsTypeMenu.photo ? photoAccessHelper.PhotoType.IMAGE : photoAccessHelper.PhotoType.VIDEO,
+              title: this.saveUri.substring(this.saveUri.lastIndexOf('/') + 1, this.saveUri.lastIndexOf('.')),
+              fileNameExtension: this.saveUri.substring(this.saveUri.lastIndexOf('.') + 1),
+              photoType: option.type === SaveToCameraRollOptionsTypeMenu.photo ? photoAccessHelper.PhotoType.IMAGE :
+              photoAccessHelper.PhotoType.VIDEO,
               subtype: photoAccessHelper.PhotoSubtype.DEFAULT
             }
           ];
+
           phAccessHelper.showAssetsCreationDialog(srcFileUris, photoCreationConfigs).then(async (res) => {
-            fs.stat(uri.substring(uri.indexOf('/data/'))).then((stat: fs.Stat) => {
-              let file = fs.openSync(uri.substring(uri.indexOf('/data/')), fs.OpenMode.READ_WRITE);
+            fs.stat(this.saveUri.substring(this.saveUri.indexOf('/data/'))).then((stat: fs.Stat) => {
+              let file = fs.openSync(this.saveUri.substring(this.saveUri.indexOf('/data/')), fs.OpenMode.READ_WRITE);
               let media_file = fs.openSync(res[0], fs.OpenMode.READ_WRITE);
               let buf = new ArrayBuffer(stat.size);
               fs.readSync(file.fd, buf);
               fs.writeSync(media_file.fd, buf);
               fs.closeSync(file);
               fs.closeSync(media_file);
+              if (uri.startsWith("http")) {
+                fs.unlinkSync(this.saveUri);
+              }
               resolve(res[0]);
             }).catch((err: BusinessError) => {
+              if (uri.startsWith("http")) {
+                fs.unlinkSync(this.saveUri);
+              }
               console.error("get file info failed with error message: " + err.message + ", error code: " + err.code);
-              reject(`get file info failed with error message: ${err.code}, ${err.message} file:===>${uri}`)
+              reject(`get file info failed with error message: ${err.code}, ${err.message} file:===>${this.saveUri}`)
             });
           })
         } catch (err) {
-          console.error(`create asset failed with error: ${err.code}, ${err.message} file:===>${uri}`);
-          reject(`create asset failed with error: ${err.code}, ${err.message} file:===>${uri}`);
+          console.error(`create asset failed with error: ${err.code}, ${err.message} file:===>${this.saveUri}`);
+          reject(`create asset failed with error: ${err.code}, ${err.message} file:===>${this.saveUri}`);
         }
       }
     })
@@ -112,7 +124,7 @@ export class CameraRollTurboModule extends TurboModule {
       let includeSharedAlbums = params.includeSharedAlbums
       let assetType = params.assetType
       let fromTime = params.fromTime
-      
+
       let toTime = params.toTime
       let mimeTypes = params.mimeTypes
       let include = params.include
@@ -170,7 +182,8 @@ export class CameraRollTurboModule extends TurboModule {
                       orientation: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.ORIENTATION).toString()),
                     },
                     timestamp: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.DATE_ADDED).toString()),
-                    modificationTimestamp: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.DATE_MODIFIED).toString()),
+                    modificationTimestamp: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.DATE_MODIFIED)
+                      .toString()),
                     location: null
                   }
                 }
@@ -304,5 +317,19 @@ export class CameraRollTurboModule extends TurboModule {
         })
       })
     })
+  }
+
+  async DownloadResources(): Promise<void> {
+    if (this.saveUri.startsWith("http") || this.saveUri.startsWith("https")) {
+      await request.downloadFile(this.ctx.uiAbilityContext, { url: this.saveUri })
+        .then(async (data: request.DownloadTask) => {
+          let downloadTask: request.DownloadTask = data;
+          await downloadTask.getTaskInfo().then((downloadInfo: request.DownloadInfo) => {
+            this.saveUri = downloadInfo.filePath;
+          })
+        }).catch((err: BusinessError) => {
+          console.error(`Failed to request the download. Code: ${err.code}, message: ${err.message}`);
+        })
+    }
   }
 }
