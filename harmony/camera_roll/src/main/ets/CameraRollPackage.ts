@@ -24,15 +24,16 @@
 
 import { RNPackage, TurboModulesFactory } from '@rnoh/react-native-openharmony/ts';
 import type { TurboModule, TurboModuleContext } from '@rnoh/react-native-openharmony/ts';
+import { TM } from '@rnoh/react-native-openharmony/generated/ts';
 import { CameraRollTurboModule } from './CameraRollTurboModule';
 import { CameraRollPermissionTurboModule } from './CameraRollPermissionTurboModule';
 
 class CameraRollTurboModulesFactory extends TurboModulesFactory {
   createTurboModule(name: string): TurboModule | null {
-    if (name === 'RNCCameraRoll') {
+    if (name === 'RNCCameraRoll' || name === TM.RNCCameraRoll.NAME) {
       return new CameraRollTurboModule(this.ctx);
     }
-    if (name === 'RNCCameraRollPermission') {
+    if (name === 'RNCCameraRollPermission' || name === TM.RNCCameraRollPermission.NAME) {
       return new CameraRollPermissionTurboModule(this.ctx);
     }
     return null;
