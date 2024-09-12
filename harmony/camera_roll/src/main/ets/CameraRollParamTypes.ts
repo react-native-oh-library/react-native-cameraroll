@@ -22,7 +22,6 @@ export type SaveToCameraRollOptions = {
 };
 
 
-
 export type GetAlbumsParams = {
   assetType?: AssetType;
 };
@@ -31,53 +30,61 @@ export type AssetType = 'All' | 'Videos' | 'Photos';
 
 export type AlbumSubType =
   | 'AlbumRegular'
-  | 'AlbumSyncedEvent'
-  | 'AlbumSyncedFaces'
-  | 'AlbumSyncedAlbum'
-  | 'AlbumImported'
-  | 'AlbumMyPhotoStream'
-  | 'AlbumCloudShared'
-  | 'Unknown';
+    | 'AlbumSyncedEvent'
+    | 'AlbumSyncedFaces'
+    | 'AlbumSyncedAlbum'
+    | 'AlbumImported'
+    | 'AlbumMyPhotoStream'
+    | 'AlbumCloudShared'
+    | 'Unknown';
 
 export type GroupTypes =
   | 'Album'
-  | 'All'
-  | 'Event'
-  | 'Faces'
-  | 'Library'
-  | 'PhotoStream'
-  | 'SavedPhotos';
+    | 'All'
+    | 'Event'
+    | 'Faces'
+    | 'Library'
+    | 'PhotoStream'
+    | 'SavedPhotos';
+
+export type AlbumType = 'All' | 'Album' | 'SmartAlbum';
 
 export type Album = {
+  id: string;
   title: string;
   count: number;
+  type: AlbumType;
   subtype?: AlbumSubType;
 };
 
 export type SubTypes =
   | 'PhotoPanorama'
-  | 'PhotoHDR'
-  | 'PhotoScreenshot'
-  | 'PhotoLive'
-  | 'PhotoDepthEffect'
-  | 'VideoStreamed'
-  | 'VideoHighFrameRate'
-  | 'VideoTimelapse';
+    | 'PhotoHDR'
+    | 'PhotoScreenshot'
+    | 'PhotoLive'
+    | 'PhotoDepthEffect'
+    | 'VideoStreamed'
+    | 'VideoHighFrameRate'
+    | 'VideoTimelapse';
 
 export type Include =
   | 'filename'
-  | 'fileSize'
-  | 'fileExtension'
-  | 'location'
-  | 'imageSize'
-  | 'playableDuration'
-  | 'orientation';
+    | 'fileSize'
+    | 'fileExtension'
+    | 'location'
+    | 'imageSize'
+    | 'playableDuration'
+    | 'orientation';
+
+export type SourceType = 'UserLibrary' | 'CloudShared';
 
 export type PhotoIdentifier = {
   node: {
+    id: string;
     type: string;
-    subTypes?: SubTypes;
-    group_name?: string;
+    subTypes: SubTypes;
+    sourceType: SourceType;
+    group_name: string[];
     image: {
       filename: string | null;
       filepath: string | null;
@@ -117,7 +124,7 @@ export type PhotoConvertionOptions = {
 };
 
 export type PhotoThumbnailOptions = {
-  allowNetworkAccess: boolean,  //iOS only
+  allowNetworkAccess: boolean, //iOS only
   targetSize: {
     height: number,
     width: number

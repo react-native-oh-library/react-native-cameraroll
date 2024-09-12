@@ -23,6 +23,7 @@
  */
 
 import { TurboModule, TurboModuleContext } from '@rnoh/react-native-openharmony/ts';
+import { TM } from '@rnoh/react-native-openharmony/generated/ts';
 import {
   Album,
   PhotoThumbnail,
@@ -41,75 +42,97 @@ import util from '@ohos.util';
 import image from '@ohos.multimedia.image';
 import { request } from '@kit.BasicServicesKit';
 import fs from '@ohos.file.fs';
-import { BusinessError } from '@ohos.base';
-const ASSET_TYPE_PHOTOS = 'Photos'
-const ASSET_TYPE_VIDEOS = 'Videos'
-const ASSET_TYPE_ALL = 'All'
+import { Context } from '@kit.AbilityKit';
+import Logger from './Logger';
 
-export class CameraRollTurboModule extends TurboModule {
-  private phAccessHelper: photoAccessHelper.PhotoAccessHelper
-  private saveUri: string = '';
+const ASSET_TYPE_PHOTOS = 'Photos';
+const ASSET_TYPE_VIDEOS = 'Videos';
+const ASSET_TYPE_ALL = 'All';
+const ResourceType = 'internet';
+
+export class CameraRollTurboModule extends TurboModule implements TM.RNCCameraRoll.Spec {
+  private phAccessHelper: photoAccessHelper.PhotoAccessHelper;
+  private context: Context = getContext(this);
 
   constructor(ctx: TurboModuleContext) {
-    super(ctx)
+    super(ctx);
     this.phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.ctx.uiAbilityContext);
   }
 
-  async save(uri: string, option: SaveToCameraRollOptions): Promise<string>{
-    return await this.saveToCameraRoll(uri,option)
+  async saveToDevice(saveUri: string, options: SaveToCameraRollOptions,
+    resourceType: string): Promise<PhotoIdentifier> {
+    let photoCreationConfigs: Array<photoAccessHelper.PhotoCreationConfig> = [
+      {
+        title: saveUri.substring(saveUri.lastIndexOf('/') + 1, saveUri.lastIndexOf('.')),
+        fileNameExtension: saveUri.substring(saveUri.lastIndexOf('.') + 1),
+        photoType: options.type === SaveToCameraRollOptionsTypeMenu.photo ? photoAccessHelper.PhotoType.IMAGE :
+        photoAccessHelper.PhotoType.VIDEO,
+        subtype: photoAccessHelper.PhotoSubtype.DEFAULT
+      }
+    ];
+    let saveUris: string[] = await this.phAccessHelper.showAssetsCreationDialog([saveUri], photoCreationConfigs);
+    if (saveUris.length) {
+      let stat = fs.statSync(saveUri);
+      let file = fs.openSync(saveUri, fs.OpenMode.READ_ONLY);
+      let buffer = new ArrayBuffer(stat.size);
+      fs.readSync(file.fd, buffer);
+      let media_file = fs.openSync(saveUris[0], fs.OpenMode.READ_WRITE);
+      fs.writeSync(media_file.fd, buffer);
+      fs.closeSync(file);
+      if (resourceType) {
+        fs.unlinkSync(saveUri);
+      }
+      fs.closeSync(media_file);
+      let result: PhotoIdentifier = {
+        node: {
+          id: '',
+          type: options.type ?? '',
+          subTypes: 'PhotoPanorama',
+          sourceType: 'UserLibrary',
+          group_name: [],
+          image: {
+            filename: photoCreationConfigs[0].title ?? null,
+            filepath: null,
+            extension: photoCreationConfigs[0].fileNameExtension ?? null,
+            uri: saveUris[0],
+            height: 0,
+            width: 0,
+            fileSize: stat.size,
+            playableDuration: 0,
+            orientation: null
+          },
+          timestamp: 0,
+          modificationTimestamp: 0,
+          location: null
+        }
+      };
+      return result;
+    }
   }
 
-  saveToCameraRoll(uri: string, option: SaveToCameraRollOptions): Promise<string> {
-    // 需要用到系统接口
-    return new Promise<string>(async (resolve, reject) => {
-      // 需要确保fileUri对应的资源存在
-      this.saveUri = uri;
-      if (!this.saveUri) {
-        console.error(`Incorrect path.${this.saveUri}`);
-        reject('Incorrect path.')
+  saveToCameraRoll(uri: string, options: SaveToCameraRollOptions): Promise<PhotoIdentifier> {
+    return new Promise<PhotoIdentifier>(async (resolve, reject) => {
+      if (!uri) {
+        Logger.error(`Incorrect path.${uri}`);
+        reject('Incorrect path.');
+      }
+      if (uri.startsWith('http') || uri.startsWith('https')) {
+        try {
+          let sandBoxPath: string = await this.DownloadResources(uri);
+          if (sandBoxPath) {
+            let saveData: PhotoIdentifier = await this.saveToDevice(sandBoxPath, options, ResourceType);
+            resolve(saveData);
+          }
+        } catch (err) {
+          reject(err);
+        }
       } else {
         try {
-          let context = this.ctx.uiAbilityContext;
-          let phAccessHelper = photoAccessHelper.getPhotoAccessHelper(context);
-          await this.DownloadResources();
-          // 获取需要保存到媒体库的位于应用沙箱的图片/视频uri
-          let srcFileUris: Array<string> = [
-            this.saveUri
-          ];
-          let photoCreationConfigs: Array<photoAccessHelper.PhotoCreationConfig> = [
-            {
-              title: this.saveUri.substring(this.saveUri.lastIndexOf('/') + 1, this.saveUri.lastIndexOf('.')),
-              fileNameExtension: this.saveUri.substring(this.saveUri.lastIndexOf('.') + 1),
-              photoType: option.type === SaveToCameraRollOptionsTypeMenu.photo ? photoAccessHelper.PhotoType.IMAGE :
-              photoAccessHelper.PhotoType.VIDEO,
-              subtype: photoAccessHelper.PhotoSubtype.DEFAULT
-            }
-          ];
-
-          phAccessHelper.showAssetsCreationDialog(srcFileUris, photoCreationConfigs).then(async (res) => {
-            fs.stat(this.saveUri.substring(this.saveUri.indexOf('/data/'))).then((stat: fs.Stat) => {
-              let file = fs.openSync(this.saveUri.substring(this.saveUri.indexOf('/data/')), fs.OpenMode.READ_WRITE);
-              let media_file = fs.openSync(res[0], fs.OpenMode.READ_WRITE);
-              let buf = new ArrayBuffer(stat.size);
-              fs.readSync(file.fd, buf);
-              fs.writeSync(media_file.fd, buf);
-              fs.closeSync(file);
-              fs.closeSync(media_file);
-              if (uri.startsWith("http")) {
-                fs.unlinkSync(this.saveUri);
-              }
-              resolve(res[0]);
-            }).catch((err: BusinessError) => {
-              if (uri.startsWith("http")) {
-                fs.unlinkSync(this.saveUri);
-              }
-              console.error("get file info failed with error message: " + err.message + ", error code: " + err.code);
-              reject(`get file info failed with error message: ${err.code}, ${err.message} file:===>${this.saveUri}`)
-            });
-          })
+          let saveData: PhotoIdentifier = await this.saveToDevice(uri, options, '');
+          resolve(saveData);
         } catch (err) {
-          console.error(`create asset failed with error: ${err.code}, ${err.message} file:===>${this.saveUri}`);
-          reject(`create asset failed with error: ${err.code}, ${err.message} file:===>${this.saveUri}`);
+          Logger.error(`Failed to save, errorCode: ${err.code}`);
+          reject(err);
         }
       }
     })
@@ -117,23 +140,22 @@ export class CameraRollTurboModule extends TurboModule {
 
   getPhotos(params: GetPhotosParams): Promise<PhotoIdentifiersPage> {
     return new Promise<PhotoIdentifiersPage>((resolve, reject) => {
-      let first = params.first
-      let after = params.after
-      let groupTypes = params.groupTypes
-      let groupName = params.groupName
-      let includeSharedAlbums = params.includeSharedAlbums
-      let assetType = params.assetType
-      let fromTime = params.fromTime
-      
-      let toTime = params.toTime
-      let mimeTypes = params.mimeTypes
-      let include = params.include
+      let first = params.first;
+      let after = params.after;
+      let groupTypes = params.groupTypes;
+      let groupName = params.groupName;
+      let includeSharedAlbums = params.includeSharedAlbums;
+      let assetType = params.assetType;
+      let fromTime = params.fromTime;
+      let toTime = params.toTime;
+      let mimeTypes = params.mimeTypes;
+      let include = params.include;
 
       let queryBegin = parseInt(this.isEmpty(after) ? '0' : after);
-      let predicates = new dataSharePredicates.DataSharePredicates()
-      predicates.in("media_type", mimeTypes)
-      predicates.limit(first + 1, queryBegin)
-      predicates.orderByDesc("date_added").orderByDesc("date_modified")
+      let predicates = new dataSharePredicates.DataSharePredicates();
+      predicates.in('media_type', mimeTypes);
+      predicates.limit(first + 1, queryBegin);
+      predicates.orderByDesc('date_added').orderByDesc('date_modified');
       let fetchOptions: photoAccessHelper.FetchOptions = {
         fetchColumns: [
           photoAccessHelper.PhotoKeys.URI,
@@ -155,7 +177,7 @@ export class CameraRollTurboModule extends TurboModule {
         if (fetchResult !== undefined) {
           fetchResult.getAllObjects().then((photoAssets) => {
             if (photoAssets !== undefined && photoAssets.length != 0) {
-              let has_next_page: boolean = first < photoAssets.length
+              let has_next_page: boolean = first < photoAssets.length;
               let pageInfo: {
                 has_next_page: boolean;
                 start_cursor?: string;
@@ -164,12 +186,16 @@ export class CameraRollTurboModule extends TurboModule {
                 has_next_page: has_next_page,
                 end_cursor: has_next_page ? (queryBegin + first).toString() : ''
               }
-              let photos: Array<PhotoIdentifier> = new Array<PhotoIdentifier>()
+              let photos: Array<PhotoIdentifier> = new Array<PhotoIdentifier>();
               photoAssets.forEach(photoAsset => {
                 let type: string = photoAsset.photoType == 1 ? 'IMAGE' : 'VIDEO'
                 let photo: PhotoIdentifier = {
                   node: {
+                    id: '',
                     type: type,
+                    subTypes: 'PhotoPanorama',
+                    sourceType: 'UserLibrary',
+                    group_name: [],
                     image: {
                       filename: photoAsset.displayName,
                       filepath: null,
@@ -179,25 +205,26 @@ export class CameraRollTurboModule extends TurboModule {
                       width: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.WIDTH).toString()),
                       fileSize: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.SIZE).toString()),
                       playableDuration: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.DURATION).toString()),
-                      orientation: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.ORIENTATION).toString()),
+                      orientation: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.ORIENTATION).toString())
                     },
                     timestamp: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.DATE_ADDED).toString()),
-                    modificationTimestamp: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.DATE_MODIFIED).toString()),
+                    modificationTimestamp: parseInt(photoAsset.get(photoAccessHelper.PhotoKeys.DATE_MODIFIED)
+                      .toString()),
                     location: null
                   }
                 }
-                photos.push(photo)
+                photos.push(photo);
               })
               let resulPage: PhotoIdentifiersPage = {
                 edges: photos,
                 page_info: pageInfo,
               }
-              resolve(resulPage)
+              resolve(resulPage);
             }
           })
         }
       }).catch(err => {
-        console.error('getPhotos failed with err: ' + err);
+        Logger.error('getPhotos failed with err: ' + err);
       })
     })
   }
@@ -206,22 +233,27 @@ export class CameraRollTurboModule extends TurboModule {
     return new Promise<Album[]>((resolve, reject) => {
       let albumSubtype;
       if (ASSET_TYPE_PHOTOS == params.assetType) {
-        albumSubtype = photoAccessHelper.AlbumSubtype.USER_GENERIC
+        albumSubtype = photoAccessHelper.AlbumSubtype.USER_GENERIC;
       } else if (ASSET_TYPE_VIDEOS == params.assetType) {
-        albumSubtype = photoAccessHelper.AlbumSubtype.VIDEO
+        albumSubtype = photoAccessHelper.AlbumSubtype.VIDEO;
       } else if (ASSET_TYPE_ALL == params.assetType) {
-        albumSubtype = photoAccessHelper.AlbumSubtype.ANY
+        albumSubtype = photoAccessHelper.AlbumSubtype.ANY;
       }
       this.phAccessHelper.getAlbums(photoAccessHelper.AlbumType.USER, albumSubtype).then(result => {
         let resultAlbums: Album[] = new Array();
         result.getAllObjects().then(albums => {
           albums.forEach(album => {
-            resultAlbums.push({ title: album.albumName, count: album.count })
+            resultAlbums.push({
+              title: album.albumName,
+              count: album.count,
+              id: '',
+              type: 'All'
+            })
           })
           resolve(resultAlbums);
         })
       }).catch((err: Error) => {
-        console.error('getAlbums failed with err: ' + err);
+        Logger.error('getAlbums failed with err: ' + err);
         reject(`Could not get media, ${JSON.stringify(err)}`)
       })
     })
@@ -240,7 +272,11 @@ export class CameraRollTurboModule extends TurboModule {
         let type: string = photoAsset.photoType == 1 ? 'IMAGE' : 'VIDEO'
         let photo: PhotoIdentifier = {
           node: {
+            id: '',
             type: type,
+            subTypes: 'PhotoPanorama',
+            sourceType: 'UserLibrary',
+            group_name: [],
             image: {
               filename: photoAsset.displayName,
               filepath: null,
@@ -257,7 +293,7 @@ export class CameraRollTurboModule extends TurboModule {
             location: null
           }
         }
-        resolve(photo)
+        resolve(photo);
       })
     })
   }
@@ -269,12 +305,12 @@ export class CameraRollTurboModule extends TurboModule {
         photoAsset.getThumbnail({ height: options.targetSize.height, width: options.targetSize.width }).then(pixMap => {
           var base64 = new util.Base64Helper();
           let packOpts: image.PackingOption = {
-            format: "image/jpeg", quality: options.quality * 100
+            format: 'image/jpeg', quality: options.quality * 100
           }
-          let imagePackerApi = image.createImagePacker()
+          let imagePackerApi = image.createImagePacker();
           imagePackerApi.packing(pixMap, packOpts).then(arrayBuffer => {
             base64.encodeToString(new Uint8Array(arrayBuffer)).then(base64String => {
-              resolve({ thumbnailBase64: base64String })
+              resolve({ thumbnailBase64: base64String });
             })
           })
         })
@@ -284,15 +320,15 @@ export class CameraRollTurboModule extends TurboModule {
 
   isEmpty(str: string): boolean {
     if (str === null || str === undefined || str.trim().length === 0) {
-      return true
+      return true;
     }
     return false;
   }
 
   getPhotoByUri(uri: string): Promise<photoAccessHelper.PhotoAsset> {
     return new Promise<photoAccessHelper.PhotoAsset>((resolve, reject) => {
-      let predicates = new dataSharePredicates.DataSharePredicates()
-      predicates.equalTo("uri", uri);
+      let predicates = new dataSharePredicates.DataSharePredicates();
+      predicates.equalTo('uri', uri);
       let fetchOptions: photoAccessHelper.FetchOptions = {
         fetchColumns: [
           photoAccessHelper.PhotoKeys.URI,
@@ -318,17 +354,43 @@ export class CameraRollTurboModule extends TurboModule {
     })
   }
 
-  async DownloadResources(): Promise<void> {
-    if (this.saveUri.startsWith("http") || this.saveUri.startsWith("https")) {
-      await request.downloadFile(this.ctx.uiAbilityContext, { url: this.saveUri })
-        .then(async (data: request.DownloadTask) => {
-          let downloadTask: request.DownloadTask = data;
-          await downloadTask.getTaskInfo().then((downloadInfo: request.DownloadInfo) => {
-            this.saveUri = downloadInfo.filePath;
-          })
-        }).catch((err: BusinessError) => {
-          console.error(`Failed to request the download. Code: ${err.code}, message: ${err.message}`);
+  DownloadResources(saveUri): Promise<string> {
+    return new Promise<string>(async (resolve, reject) => {
+      try {
+        let downloadTask: request.DownloadTask = await request.downloadFile(this.context, { url: saveUri });
+        downloadTask.on('complete', async () => {
+          try {
+            let downloadInfo: request.DownloadInfo = await downloadTask.getTaskInfo();
+            resolve(downloadInfo.filePath);
+          } catch (err) {
+            Logger.error(`Failed to get downloadInfo. Code: ${err.code}, message: ${err.message}`);
+          } finally {
+            downloadTask.off('complete');
+          }
         })
-    }
+      } catch (err) {
+        Logger.error(`Failed to request the download. Code: ${err.code}, message: ${err.message}`);
+        reject(err);
+      }
+    })
+  }
+
+  addListener(eventName: string): void {
+  }
+
+  removeListeners(count: number): void {
+  }
+
+  getNowTime(): string {
+    let date = new Date();
+    let year = date.getFullYear().toString();
+    let month = date.getMonth() + 1;
+    let day = date.getDay();
+    let hours = date.getHours().toString();
+    let minutes = date.getMinutes().toString();
+    let seconds = date.getSeconds().toString();
+    let milliseconds = date.getMilliseconds().toString();
+    return year + (month > 10 ? month : '0' + month) + (day > 10 ? day : '0' + day) + hours + minutes + seconds +
+      milliseconds;
   }
 }

@@ -1,7 +1,7 @@
 /**
  * MIT License
  *
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,39 +22,43 @@
  * SOFTWARE.
  */
 
-#ifndef CAMERAROLLPACKAGE_H
-#define CAMERAROLLPACKAGE_H
+import hilog from '@ohos.hilog';
 
-#include "CameraRollTurboModule.h"
-#include "CameraRollPermissionTurboModule.h"
-#include "RNOH/Package.h"
+class Logger {
+  private domain: number;
+  private prefix: string;
+  private format: string = '%{public}s, %{public}s';
+  private isDebug: boolean;
 
-using namespace rnoh;
-using namespace facebook;
+  /**
+   * constructor.
+   *
+   * @param Prefix Identifies the log tag.
+   * @param domain Domain Indicates the service domain, which is a hexadecimal integer ranging from 0x0 to 0xFFFFF.
+   */
+  constructor(prefix: string = 'camera roll', domain: number = 0xFF00, isDebug = false) {
+    this.prefix = prefix;
+    this.domain = domain;
+    this.isDebug = isDebug;
+  }
 
-class CameraRollTurboModuleFactoryDelegate : public TurboModuleFactoryDelegate {
-public:
-    SharedTurboModule createTurboModule(Context ctx, const std::string &name) const override
-    {
-        if (name == "RNCCameraRoll") {
-            return std::make_shared<CameraRollTurboModuleSpecJSI>(ctx, name);
-        }
-        if (name == "RNCCameraRollPermission") {
-            return std::make_shared<CameraRollPermissionTurboModuleSpecJSI>(ctx, name);
-        }
-        return nullptr;
-    };
-};
-namespace rnoh {
-
-class CameraRollPackage : public Package {
-public:
-    CameraRollPackage(Package::Context ctx) : Package(ctx) {}
-        
-    std::unique_ptr<TurboModuleFactoryDelegate> createTurboModuleFactoryDelegate()
-    {
-        return std::make_unique<CameraRollTurboModuleFactoryDelegate>();
+  debug(...args: string[]): void {
+    if (this.isDebug) {
+      hilog.debug(this.domain, this.prefix, this.format, args);
     }
-};
-} // namespace rnoh
-#endif
+  }
+
+  info(...args: string[]): void {
+    hilog.info(this.domain, this.prefix, this.format, args);
+  }
+
+  warn(...args: string[]): void {
+    hilog.warn(this.domain, this.prefix, this.format, args);
+  }
+
+  error(...args: string[]): void {
+    hilog.error(this.domain, this.prefix, this.format, args);
+  }
+}
+
+export default new Logger('camera roll', 0xFF00, false);
