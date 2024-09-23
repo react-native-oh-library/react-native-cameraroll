@@ -43,6 +43,7 @@ import image from '@ohos.multimedia.image';
 import { request } from '@kit.BasicServicesKit';
 import fs from '@ohos.file.fs';
 import { Context } from '@kit.AbilityKit';
+import { fileUri } from '@kit.CoreFileKit';
 import Logger from './Logger';
 
 const ASSET_TYPE_PHOTOS = 'Photos';
@@ -70,7 +71,7 @@ export class CameraRollTurboModule extends TurboModule implements TM.RNCCameraRo
         subtype: photoAccessHelper.PhotoSubtype.DEFAULT
       }
     ];
-    let saveUris: string[] = await this.phAccessHelper.showAssetsCreationDialog([saveUri], photoCreationConfigs);
+    let saveUris: string[] = await this.phAccessHelper.showAssetsCreationDialog([fileUri.getUriFromPath(saveUri)], photoCreationConfigs);
     if (saveUris.length) {
       let stat = fs.statSync(saveUri);
       let file = fs.openSync(saveUri, fs.OpenMode.READ_ONLY);
