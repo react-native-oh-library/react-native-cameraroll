@@ -108,6 +108,10 @@ export class CameraRollTurboModule extends TurboModule implements TM.RNCCameraRo
         }
       };
       return result;
+    }else {
+      if (resourceType) {
+        fs.unlinkSync(saveUri);
+      }
     }
   }
 
