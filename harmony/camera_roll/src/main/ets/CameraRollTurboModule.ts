@@ -71,7 +71,8 @@ export class CameraRollTurboModule extends TurboModule implements TM.RNCCameraRo
         subtype: photoAccessHelper.PhotoSubtype.DEFAULT
       }
     ];
-    let saveUris: string[] = await this.phAccessHelper.showAssetsCreationDialog([fileUri.getUriFromPath(saveUri)], photoCreationConfigs);
+    let saveUris: string[] =
+      await this.phAccessHelper.showAssetsCreationDialog([fileUri.getUriFromPath(saveUri)], photoCreationConfigs);
     if (saveUris.length) {
       let stat = fs.statSync(saveUri);
       let file = fs.openSync(saveUri, fs.OpenMode.READ_ONLY);
@@ -108,7 +109,7 @@ export class CameraRollTurboModule extends TurboModule implements TM.RNCCameraRo
         }
       };
       return result;
-    }else {
+    } else {
       if (resourceType) {
         fs.unlinkSync(saveUri);
       }
