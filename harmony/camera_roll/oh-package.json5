@@ -5,7 +5,7 @@
   "name": "@react-native-oh-tpl/camera-roll",
   "description": "",
   "main": "index.ets",
-  "version": "7.8.3-0.1.2",
+  "version": "7.8.3-nc.0.1.2",
   "dependencies": {
     "@rnoh/react-native-openharmony": "file:../libs/react_native_openharmony-5.0.0.500.har"
   }
