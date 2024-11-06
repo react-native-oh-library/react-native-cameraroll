@@ -23,7 +23,7 @@
  */
 
 import { TurboModule, TurboModuleContext } from '@rnoh/react-native-openharmony/ts';
-import { TM } from '@rnoh/react-native-openharmony/generated/ts';
+import { TM } from './namespace/ts';
 import {
   Album,
   PhotoThumbnail,

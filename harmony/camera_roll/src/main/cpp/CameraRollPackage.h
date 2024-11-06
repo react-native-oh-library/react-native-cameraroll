@@ -22,30 +22,39 @@
  * SOFTWARE.
  */
 
-import { RNPackage, TurboModulesFactory } from '@rnoh/react-native-openharmony/ts';
-import type { TurboModule, TurboModuleContext } from '@rnoh/react-native-openharmony/ts';
-import { TM } from './namespace/ts';
-import { CameraRollTurboModule } from './CameraRollTurboModule';
-import { CameraRollPermissionTurboModule } from './CameraRollPermissionTurboModule';
+#ifndef CAMERAROLLPACKAGE_H
+#define CAMERAROLLPACKAGE_H
 
-class CameraRollTurboModulesFactory extends TurboModulesFactory {
-  createTurboModule(name: string): TurboModule | null {
-    if (name === 'RNCCameraRoll' || name === TM.RNCCameraRoll.NAME) {
-      return new CameraRollTurboModule(this.ctx);
+#include "RNCCameraRoll.h"
+#include "RNCCameraRollPermission.h"
+#include "RNOH/Package.h"
+
+using namespace rnoh;
+using namespace facebook;
+
+class CameraRollTurboModuleFactoryDelegate : public TurboModuleFactoryDelegate {
+public:
+    SharedTurboModule createTurboModule(Context ctx, const std::string &name) const override
+    {
+        if (name == "RNCCameraRoll") {
+            return std::make_shared<RNCCameraRoll>(ctx, name);
+        }
+        if (name == "RNCCameraRollPermission") {
+            return std::make_shared<RNCCameraRollPermission>(ctx, name);
+        }
+        return nullptr;
+    };
+};
+namespace rnoh {
+
+class CameraRollPackage : public Package {
+public:
+    CameraRollPackage(Package::Context ctx) : Package(ctx) {}
+        
+    std::unique_ptr<TurboModuleFactoryDelegate> createTurboModuleFactoryDelegate()
+    {
+        return std::make_unique<CameraRollTurboModuleFactoryDelegate>();
     }
-    if (name === 'RNCCameraRollPermission' || name === TM.RNCCameraRollPermission.NAME) {
-      return new CameraRollPermissionTurboModule(this.ctx);
-    }
-    return null;
-  }
-
-  hasTurboModule(name: string): boolean {
-    return name === 'RNCCameraRoll' || name === 'RNCCameraRollPermission';
-  }
-}
-
-export class CameraRollPackage extends RNPackage {
-  createTurboModulesFactory(ctx: TurboModuleContext): TurboModulesFactory {
-    return new CameraRollTurboModulesFactory(ctx);
-  }
-}
+};
+} // namespace rnoh
+#endif
