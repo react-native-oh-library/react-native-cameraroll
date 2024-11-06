@@ -115,12 +115,7 @@
     ]
   },
   "harmony": {
-    "alias": "@react-native-camera-roll/camera-roll",
-    "codegenConfig": {
-      "specPaths": [
-        "./src"
-      ]
-    }
+    "alias": "@react-native-camera-roll/camera-roll"
   },
   "detox": {
     "test-runner": "jest",
