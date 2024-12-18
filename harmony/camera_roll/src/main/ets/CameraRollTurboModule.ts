@@ -78,7 +78,7 @@ export class CameraRollTurboModule extends TurboModule implements TM.RNCCameraRo
       let file = fs.openSync(saveUri, fs.OpenMode.READ_ONLY);
       let buffer = new ArrayBuffer(stat.size);
       fs.readSync(file.fd, buffer);
-      let media_file = fs.openSync(saveUris[0], fs.OpenMode.READ_WRITE);
+      let media_file = fs.openSync(saveUris[0], fs.OpenMode.WRITE_ONLY);
       fs.writeSync(media_file.fd, buffer);
       fs.closeSync(file);
       if (resourceType) {
