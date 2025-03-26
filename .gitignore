@@ -62,3 +62,5 @@ index.ios.bundle
 
 # Bob generated files
 lib/
+harmony/camera_roll/BuildProfile.ets
+harmony/camera_roll/oh-package-lock.json5
