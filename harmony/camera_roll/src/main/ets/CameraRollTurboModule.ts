@@ -67,48 +67,58 @@ export class CameraRollTurboModule extends TurboModule implements TM.RNCCameraRo
         title: saveUri.substring(saveUri.lastIndexOf('/') + 1, saveUri.lastIndexOf('.')),
         fileNameExtension: saveUri.substring(saveUri.lastIndexOf('.') + 1),
         photoType: options.type === SaveToCameraRollOptionsTypeMenu.photo ? photoAccessHelper.PhotoType.IMAGE :
-        photoAccessHelper.PhotoType.VIDEO,
+          photoAccessHelper.PhotoType.VIDEO,
         subtype: photoAccessHelper.PhotoSubtype.DEFAULT
       }
     ];
+    let _saveUri = saveUri;
+    if (!saveUri.startsWith('file://')) {
+      _saveUri = fileUri.getUriFromPath(saveUri)
+    }
+
     let saveUris: string[] =
-      await this.phAccessHelper.showAssetsCreationDialog([fileUri.getUriFromPath(saveUri)], photoCreationConfigs);
+      await this.phAccessHelper.showAssetsCreationDialog([_saveUri], photoCreationConfigs);
     if (saveUris.length) {
-      let stat = fs.statSync(saveUri);
-      let file = fs.openSync(saveUri, fs.OpenMode.READ_ONLY);
-      let buffer = new ArrayBuffer(stat.size);
-      fs.readSync(file.fd, buffer);
-      let media_file = fs.openSync(saveUris[0], fs.OpenMode.WRITE_ONLY);
-      fs.writeSync(media_file.fd, buffer);
-      fs.closeSync(file);
-      if (resourceType) {
-        fs.unlinkSync(saveUri);
-      }
-      fs.closeSync(media_file);
-      let result: PhotoIdentifier = {
-        node: {
-          id: '',
-          type: options.type ?? '',
-          subTypes: 'PhotoPanorama',
-          sourceType: 'UserLibrary',
-          group_name: [],
-          image: {
-            filename: photoCreationConfigs[0].title ?? null,
-            filepath: null,
-            extension: photoCreationConfigs[0].fileNameExtension ?? null,
-            uri: saveUris[0],
-            height: 0,
-            width: 0,
-            fileSize: stat.size,
-            playableDuration: 0,
-            orientation: null
-          },
-          timestamp: 0,
-          modificationTimestamp: 0,
-          location: null
+      try{
+        let file = fs.openSync(_saveUri, fs.OpenMode.READ_ONLY);
+        let stat = fs.statSync(file.fd);
+        let buffer = new ArrayBuffer(stat.size);
+        fs.readSync(file.fd, buffer);
+        let media_file = fs.openSync(saveUris[0], fs.OpenMode.WRITE_ONLY);
+        fs.writeSync(media_file.fd, buffer);
+        fs.closeSync(file);
+        if (resourceType) {
+          fs.unlinkSync(saveUri);
         }
-      };
-      return result;
+        fs.closeSync(media_file);
+        let result: PhotoIdentifier = {
+          node: {
+            id: '',
+            type: options.type ?? '',
+            subTypes: 'PhotoPanorama',
+            sourceType: 'UserLibrary',
+            group_name: [],
+            image: {
+              filename: photoCreationConfigs[0].title ?? null,
+              filepath: null,
+              extension: photoCreationConfigs[0].fileNameExtension ?? null,
+              uri: saveUris[0],
+              height: 0,
+              width: 0,
+              fileSize: stat.size,
+              playableDuration: 0,
+              orientation: null
+            },
+            timestamp: 0,
+            modificationTimestamp: 0,
+            location: null
+          }
+        };
+        return result;
+      }catch(e){
+        Logger.error(`saveToDevice error: ${e}`);
+
+      }
     } else {
       if (resourceType) {
         fs.unlinkSync(saveUri);
