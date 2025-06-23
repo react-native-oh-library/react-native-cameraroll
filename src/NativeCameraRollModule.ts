@@ -1,9 +1,12 @@
 /* eslint-disable @typescript-eslint/ban-types */
 // we use Object type because methods on the native side use NSDictionary and ReadableMap
 // and we want to stay compatible with those
-import {TurboModuleRegistry, TurboModule} from 'react-native';
-import type {PhotoThumbnail} from './CameraRoll';
-import type {Double} from 'react-native/Libraries/Types/CodegenTypes';
+import { TurboModuleRegistry, TurboModule } from 'react-native';
+import type { Double } from 'react-native/Libraries/Types/CodegenTypes';
+
+export type PhotoThumbnail = {
+  thumbnailBase64: string;
+};
 
 export type AlbumType = 'All' | 'Album' | 'SmartAlbum';
 
