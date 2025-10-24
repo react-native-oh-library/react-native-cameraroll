@@ -54,10 +54,35 @@ const ResourceType = 'internet';
 export class CameraRollTurboModule extends TurboModule implements TM.RNCCameraRoll.Spec {
   private phAccessHelper: photoAccessHelper.PhotoAccessHelper;
   private context: Context = getContext(this);
+  private dialogQueue = [];
+  private isDialogOpen = false;
 
   constructor(ctx: TurboModuleContext) {
     super(ctx);
     this.phAccessHelper = photoAccessHelper.getPhotoAccessHelper(this.ctx.uiAbilityContext);
+  }
+
+  async showDialog() {
+    if(this.isDialogOpen) return;
+    this.isDialogOpen = true
+    const [saveUris, photoCreationConfigs, res] = this.dialogQueue.pop()
+    let result = await this.phAccessHelper.showAssetsCreationDialog(saveUris, photoCreationConfigs);
+    res(result)
+    this.isDialogOpen = false
+    if(this.dialogQueue.length) this.showDialog()
+  }
+  requestToCreateDialog(saveUris, photoCreationConfigs): Promise<string[]> {
+    return new Promise(res => {
+      this.dialogQueue.push([saveUris, photoCreationConfigs, res])
+      this.showDialog()
+    })
+  }
+
+  getAssetsPermissionResult(saveUris, photoCreationConfigs): Promise<string[]> {
+    return new Promise(async(res) => {
+      let result = await this.requestToCreateDialog(saveUris, photoCreationConfigs);
+      res(result)
+    })
   }
 
   async saveToDevice(saveUri: string, options: SaveToCameraRollOptions,
@@ -76,8 +101,10 @@ export class CameraRollTurboModule extends TurboModule implements TM.RNCCameraRo
       _saveUri = fileUri.getUriFromPath(saveUri)
     }
 
-    let saveUris: string[] =
-      await this.phAccessHelper.showAssetsCreationDialog([_saveUri], photoCreationConfigs);
+    // let saveUris: string[] =
+    //   await this.phAccessHelper.showAssetsCreationDialog([_saveUri], photoCreationConfigs);
+
+    let saveUris =  await this.getAssetsPermissionResult([_saveUri], photoCreationConfigs)
     if (saveUris.length) {
       try{
         let file = fs.openSync(_saveUri, fs.OpenMode.READ_ONLY);
