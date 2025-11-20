@@ -45,6 +45,7 @@ import fs from '@ohos.file.fs';
 import { Context } from '@kit.AbilityKit';
 import { fileUri } from '@kit.CoreFileKit';
 import Logger from './Logger';
+import uri from '@ohos.uri';
 
 const ASSET_TYPE_PHOTOS = 'Photos';
 const ASSET_TYPE_VIDEOS = 'Videos';
@@ -85,6 +86,33 @@ export class CameraRollTurboModule extends TurboModule implements TM.RNCCameraRo
     })
   }
 
+  private getUriOnSandboxPath(uriStr: string): string {
+    const uriObj = new uri.URI(uriStr);
+    if(uriObj.scheme !== 'file'){
+      return uriStr;
+    }
+    const filesDir = this.context.filesDir;
+
+    const storagePrefix = '/data/storage/';
+    const storageIndex = filesDir.indexOf(storagePrefix);
+    if (storageIndex === -1) {
+      return uriStr;
+    }
+    const elEndIndex = filesDir.indexOf('/', storageIndex + storagePrefix.length);
+    if (elEndIndex === -1) {
+      return uriStr;
+    }
+
+    const sandboxTopRoot = filesDir.substring(storageIndex, elEndIndex + 1);
+    const sandboxMappingRoot = '/storage/Users/';
+    const filePath = decodeURIComponent(uriObj.path).toLowerCase();
+
+    if(filePath.startsWith(sandboxTopRoot.toLowerCase())||filePath.startsWith(sandboxMappingRoot.toLowerCase())){
+      uriStr = uriStr.replace(/^file:\/+/i, '');
+    }
+    return uriStr;
+  }
+
   async saveToDevice(saveUri: string, options: SaveToCameraRollOptions,
     resourceType: string): Promise<PhotoIdentifier> {
     let photoCreationConfigs: Array<photoAccessHelper.PhotoCreationConfig> = [
@@ -97,8 +125,9 @@ export class CameraRollTurboModule extends TurboModule implements TM.RNCCameraRo
       }
     ];
     let _saveUri = saveUri;
-    if (!saveUri.startsWith('file://')) {
-      _saveUri = fileUri.getUriFromPath(saveUri)
+    _saveUri = this.getUriOnSandboxPath(saveUri);
+    if (!_saveUri.startsWith('file://')) {
+      _saveUri = fileUri.getUriFromPath(_saveUri);
     }
 
     // let saveUris: string[] =
